@@ -1,41 +1,55 @@
 """Derived index adapters behind stable interfaces.
 
-SQLite remains the source of truth. Vector and graph indexes are derived from published
-SQLite rows and are selected by environment:
+The source service is the source of truth. Vector and graph indexes are derived from published rows:
 
-- KAG_VECTOR_BACKEND = sqlite (default, offline) | qdrant
+- KAG_VECTOR_BACKEND = sqlite (default, offline, hashed embeddings) | qdrant (configured embedder)
 - KAG_GRAPH_BACKEND  = sqlite (default, offline) | neo4j
 
-Every index write carries a generation number. Index hits are only used when the same
-resource is also published in SQLite, so an unpublished (failed or in-flight) ingestion can
-never surface, even if its points already exist in Qdrant or Neo4j.
+Index writes carry the generation they were produced for. Reads intersect index hits with resources
+the source service has published, so an unpublished (failed or in-flight) ingestion never surfaces.
 """
 import os
 import threading
 import uuid
 
-from .db import db
-from .text import DIMENSION, embedding
+from .domain.documents import chunk_text
+from .embeddings import HashedEmbedder, embedder
+from .source_client import source
 
-QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "kag_resources")
+QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "kag_chunks")
 _lock = threading.Lock()
 _instances: dict = {}
+_offline_embedder = HashedEmbedder()
+
+
+def _max_per_resource(scored, candidate_ids):
+    best: dict[str, float] = {}
+    for resource_id, score in scored:
+        if resource_id in candidate_ids and score > best.get(resource_id, float("-inf")):
+            best[resource_id] = score
+    return sorted(best.items(), key=lambda x: x[1], reverse=True)
 
 
 # ---------------------------------------------------------------- vector ports
 class SQLiteVectorIndex:
-    """Offline hybrid ranking: the hashed vector is recomputed from published rows."""
+    """Offline hybrid ranking. Vectors are recomputed from published text with the hashed embedder."""
 
     name = "sqlite"
 
-    def upsert_resources(self, tenant_id, generation, documents):
-        # Nothing to write: published rows in SQLite are the index for this backend.
+    def index_chunks(self, tenant_id, generation, chunks):
+        return None  # published rows are the index for this backend
+
+    def delete_resources(self, tenant_id, resource_ids):
         return None
 
     def rank(self, tenant_id, generation, question, candidates):
-        query = embedding(question)
-        scored = [(d["id"], sum(a * b for a, b in zip(query, embedding(d["title"] + " " + d["text"])))) for d in candidates]
-        return sorted(scored, key=lambda x: x[1], reverse=True)
+        query = _offline_embedder.embed_query(question)
+        scored = []
+        for d in candidates:
+            pieces = chunk_text(d["title"] + ". " + d["text"]) or [d["text"]]
+            for vector in _offline_embedder.embed_documents(pieces):
+                scored.append((d["id"], sum(a * b for a, b in zip(query, vector))))
+        return _max_per_resource(scored, {d["id"] for d in candidates})
 
 
 class QdrantVectorIndex:
@@ -46,60 +60,58 @@ class QdrantVectorIndex:
         from qdrant_client.http import models
 
         self.models = models
-        self.client = QdrantClient(
-            url=os.environ["QDRANT_URL"],
-            api_key=os.getenv("QDRANT_API_KEY") or None,
-            timeout=10,
-        )
-        if not self.client.collection_exists(QDRANT_COLLECTION):
+        self.embedder = embedder()
+        self.collection = f"{QDRANT_COLLECTION}_{self.embedder.name}_{self.embedder.dimension}"
+        self.client = QdrantClient(url=os.environ["QDRANT_URL"], api_key=os.getenv("QDRANT_API_KEY") or None, timeout=10)
+        if not self.client.collection_exists(self.collection):
             self.client.create_collection(
-                collection_name=QDRANT_COLLECTION,
-                vectors_config=models.VectorParams(size=DIMENSION, distance=models.Distance.COSINE),
+                collection_name=self.collection,
+                vectors_config=models.VectorParams(size=self.embedder.dimension, distance=models.Distance.COSINE),
             )
-            self.client.create_payload_index(QDRANT_COLLECTION, "tenant_id", models.PayloadSchemaType.KEYWORD)
-            self.client.create_payload_index(QDRANT_COLLECTION, "generation", models.PayloadSchemaType.INTEGER)
+            self.client.create_payload_index(self.collection, "tenant_id", models.PayloadSchemaType.KEYWORD)
+            self.client.create_payload_index(self.collection, "generation", models.PayloadSchemaType.INTEGER)
+            self.client.create_payload_index(self.collection, "resource_id", models.PayloadSchemaType.KEYWORD)
 
     @staticmethod
-    def point_id(resource_id: str) -> str:
-        # Qdrant point IDs must be UUIDs or integers; the resource ID is kept in the payload.
-        return str(uuid.uuid5(uuid.NAMESPACE_URL, resource_id))
+    def point_id(chunk_id: str) -> str:
+        return str(uuid.uuid5(uuid.NAMESPACE_URL, chunk_id))
 
-    def upsert_resources(self, tenant_id, generation, documents):
-        if not documents:
+    def index_chunks(self, tenant_id, generation, chunks):
+        """chunks: [{id, resource_id, ordinal, vector}]. Upserts are idempotent per chunk ID."""
+        if not chunks:
             return
-        points = [
-            self.models.PointStruct(
-                id=self.point_id(d["id"]),
-                vector=embedding(d["title"] + " " + d["text"]),
-                payload={"tenant_id": tenant_id, "resource_id": d["id"], "generation": generation},
-            )
-            for d in documents
-        ]
-        # Upsert is idempotent: replaying the same resource overwrites its point.
-        self.client.upsert(collection_name=QDRANT_COLLECTION, points=points, wait=True)
+        points = [self.models.PointStruct(
+            id=self.point_id(c["id"]), vector=c["vector"],
+            payload={"tenant_id": tenant_id, "resource_id": c["resource_id"], "ordinal": c["ordinal"], "generation": generation},
+        ) for c in chunks]
+        self.client.upsert(collection_name=self.collection, points=points, wait=True)
+
+    def delete_resources(self, tenant_id, resource_ids):
+        if not resource_ids:
+            return
+        m = self.models
+        self.client.delete(collection_name=self.collection, points_selector=m.Filter(must=[
+            m.FieldCondition(key="tenant_id", match=m.MatchValue(value=tenant_id)),
+            m.FieldCondition(key="resource_id", match=m.MatchAny(any=list(resource_ids))),
+        ]), wait=True)
 
     def rank(self, tenant_id, generation, question, candidates):
         candidate_ids = {d["id"] for d in candidates}
         if not candidate_ids:
             return []
-        models = self.models
+        m = self.models
         response = self.client.query_points(
-            collection_name=QDRANT_COLLECTION,
-            query=embedding(question),
-            query_filter=models.Filter(must=[
-                models.FieldCondition(key="tenant_id", match=models.MatchValue(value=tenant_id)),
-                models.FieldCondition(key="generation", range=models.Range(lte=generation)),
+            collection_name=self.collection,
+            query=self.embedder.embed_query(question),
+            query_filter=m.Filter(must=[
+                m.FieldCondition(key="tenant_id", match=m.MatchValue(value=tenant_id)),
+                m.FieldCondition(key="generation", range=m.Range(lte=generation)),
             ]),
-            # Tenant-filtered top-k large enough to cover every published candidate.
-            limit=max(100, len(candidate_ids) * 10),
+            # Tenant-filtered top-k large enough to cover chunks for every candidate resource.
+            limit=max(200, len(candidate_ids) * 20),
             with_payload=True,
         )
-        ranked = []
-        for point in response.points:
-            resource_id = point.payload.get("resource_id")
-            if resource_id in candidate_ids:
-                ranked.append((resource_id, point.score))
-        return ranked
+        return _max_per_resource(((p.payload["resource_id"], p.score) for p in response.points), candidate_ids)
 
 
 # ---------------------------------------------------------------- graph ports
@@ -109,14 +121,11 @@ class SQLiteGraphIndex:
     def upsert_support(self, tenant_id, generation, pairs):
         return None
 
+    def delete_resources(self, tenant_id, resource_ids):
+        return None
+
     def support_pairs(self, tenant_id, generation):
-        with db() as connection:
-            rows = connection.execute(
-                "SELECT id AS resource_id, skill_id FROM resources WHERE tenant_id=? AND skill_id IS NOT NULL "
-                "UNION SELECT resource_id, skill_id FROM resource_entities WHERE tenant_id=?",
-                (tenant_id, tenant_id),
-            ).fetchall()
-        return {(r["resource_id"], r["skill_id"]) for r in rows}
+        return {tuple(p) for p in source().snapshot(tenant_id, include_web=True)["support"]}
 
 
 class Neo4jGraphIndex:
@@ -125,18 +134,13 @@ class Neo4jGraphIndex:
     def __init__(self):
         from neo4j import GraphDatabase
 
-        self.driver = GraphDatabase.driver(
-            os.environ["NEO4J_URI"],
-            auth=(os.getenv("NEO4J_USER", "neo4j"), os.environ["NEO4J_PASSWORD"]),
-        )
+        self.database = os.getenv("NEO4J_DATABASE", "neo4j")
+        self.driver = GraphDatabase.driver(os.environ["NEO4J_URI"], auth=(os.getenv("NEO4J_USER", "neo4j"), os.environ["NEO4J_PASSWORD"]))
         self.driver.verify_connectivity()
 
     def upsert_support(self, tenant_id, generation, pairs):
         if not pairs:
             return
-        rows = [{"resource": r, "skill": s} for r, s in pairs]
-        # MERGE keeps replays idempotent. Every node and edge is tagged with the generation
-        # that wrote it, and reads filter on that tag.
         self.driver.execute_query(
             """
             UNWIND $rows AS row
@@ -146,20 +150,19 @@ class Neo4jGraphIndex:
             MERGE (r)-[e:SUPPORTS]->(s)
             SET e.generation = CASE WHEN e.generation IS NULL OR e.generation < $gen THEN $gen ELSE e.generation END
             """,
-            rows=rows, tenant=tenant_id, gen=generation,
-            database_=os.getenv("NEO4J_DATABASE", "neo4j"),
-        )
+            rows=[{"resource": r, "skill": s} for r, s in pairs], tenant=tenant_id, gen=generation, database_=self.database)
+
+    def delete_resources(self, tenant_id, resource_ids):
+        if not resource_ids:
+            return
+        self.driver.execute_query("MATCH (r:Resource {tenant_id:$tenant}) WHERE r.id IN $ids DETACH DELETE r",
+                                  tenant=tenant_id, ids=list(resource_ids), database_=self.database)
 
     def support_pairs(self, tenant_id, generation):
         records, _, _ = self.driver.execute_query(
-            """
-            MATCH (r:Resource {tenant_id:$tenant})-[e:SUPPORTS]->(s:Skill {tenant_id:$tenant})
-            WHERE e.generation <= $gen
-            RETURN r.id AS resource_id, s.id AS skill_id
-            """,
-            tenant=tenant_id, gen=generation,
-            database_=os.getenv("NEO4J_DATABASE", "neo4j"),
-        )
+            "MATCH (r:Resource {tenant_id:$tenant})-[e:SUPPORTS]->(s:Skill {tenant_id:$tenant}) WHERE e.generation <= $gen "
+            "RETURN r.id AS resource_id, s.id AS skill_id",
+            tenant=tenant_id, gen=generation, database_=self.database)
         return {(r["resource_id"], r["skill_id"]) for r in records}
 
 
@@ -187,3 +190,9 @@ def graph_index():
     if backend != "sqlite":
         raise RuntimeError(f"Unknown KAG_GRAPH_BACKEND: {backend}")
     return _singleton("graph", SQLiteGraphIndex)
+
+
+def reset_instances() -> None:
+    """Drop cached adapters (tests switch backends)."""
+    with _lock:
+        _instances.clear()

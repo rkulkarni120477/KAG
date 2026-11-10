@@ -1,0 +1,102 @@
+{
+  "realm": "education",
+  "enabled": true,
+  "displayName": "Northstar education (synthetic demo)",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "bruteForceProtected": true,
+  "failureFactor": 10,
+  "accessTokenLifespan": 1800,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 28800,
+  "roles": {
+    "realm": [
+      { "name": "student", "description": "Student self-service" },
+      { "name": "teacher", "description": "Teacher instruction access" },
+      { "name": "advisor", "description": "Academic advising access" },
+      { "name": "admin", "description": "Platform administration (no student-record purpose)" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "kag-web",
+      "name": "Northstar web application",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "implicitFlowEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": ["https://localhost:8443/*"],
+      "webOrigins": ["https://localhost:8443"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "access.token.lifespan": "1800"
+      },
+      "protocolMappers": [
+        {
+          "name": "kag-api audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": { "included.client.audience": "kag-api", "id.token.claim": "false", "access.token.claim": "true" }
+        },
+        {
+          "name": "tenant_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": { "user.attribute": "tenant_id", "claim.name": "tenant_id", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true" }
+        },
+        {
+          "name": "kag_user_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": { "user.attribute": "kag_user_id", "claim.name": "kag_user_id", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true" }
+        },
+        {
+          "name": "role",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": { "user.attribute": "role", "claim.name": "role", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true" }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "student@northstar.demo", "email": "student@northstar.demo", "emailVerified": true, "enabled": true,
+      "firstName": "Alex", "lastName": "Morgan", "realmRoles": ["student"],
+      "attributes": { "tenant_id": ["northstar"], "kag_user_id": ["student"], "role": ["student"] },
+      "credentials": [{ "type": "password", "value": "demo-pass-2026", "temporary": false }]
+    },
+    {
+      "username": "teacher@northstar.demo", "email": "teacher@northstar.demo", "emailVerified": true, "enabled": true,
+      "firstName": "Jordan", "lastName": "Lee", "realmRoles": ["teacher"],
+      "attributes": { "tenant_id": ["northstar"], "kag_user_id": ["teacher"], "role": ["teacher"] },
+      "credentials": [{ "type": "password", "value": "demo-pass-2026", "temporary": false }]
+    },
+    {
+      "username": "advisor@northstar.demo", "email": "advisor@northstar.demo", "emailVerified": true, "enabled": true,
+      "firstName": "Taylor", "lastName": "Brooks", "realmRoles": ["advisor"],
+      "attributes": { "tenant_id": ["northstar"], "kag_user_id": ["advisor"], "role": ["advisor"] },
+      "credentials": [{ "type": "password", "value": "demo-pass-2026", "temporary": false }]
+    },
+    {
+      "username": "admin@northstar.demo", "email": "admin@northstar.demo", "emailVerified": true, "enabled": true,
+      "firstName": "Casey", "lastName": "Rivera", "realmRoles": ["admin"],
+      "attributes": { "tenant_id": ["northstar"], "kag_user_id": ["admin"], "role": ["admin"] },
+      "credentials": [{ "type": "password", "value": "demo-pass-2026", "temporary": false }]
+    },
+    {
+      "username": "isolation@other.demo", "email": "isolation@other.demo", "emailVerified": true, "enabled": true,
+      "firstName": "Isolation", "lastName": "Fixture", "realmRoles": ["teacher"],
+      "attributes": { "tenant_id": ["other"], "kag_user_id": ["outsider"], "role": ["teacher"] },
+      "credentials": [{ "type": "password", "value": "demo-pass-2026", "temporary": false }]
+    }
+  ]
+}

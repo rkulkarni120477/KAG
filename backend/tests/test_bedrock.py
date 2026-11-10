@@ -1,18 +1,12 @@
 """Validate the generation branch without sending any network requests."""
 import json
 import os
-import tempfile
 from unittest.mock import Mock, patch
 
-os.environ["KAG_LOAD_DOTENV"] = "false"
-os.environ.setdefault("KAG_DATA_DIR", tempfile.mkdtemp(prefix="northstar-generation-test-"))
-
 from app.kag import generate
-from app.db import initialize
 
 
 def test_bedrock_keeps_ai_separate_and_rejects_unknown_citations():
-    initialize()
     state = {
         "user":{"tenant_id":"test"},"question":"Explain ratios",
         "evidence":[{"id":"source-1","title":"Ratios","source_version":"demo-v1","text":"Ratios compare quantities.","source_uri":"demo://ratios","skill_id":"ratios"}],

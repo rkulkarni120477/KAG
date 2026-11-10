@@ -2,14 +2,75 @@ name: Application checks
 on: [push, pull_request]
 jobs:
   backend:
+    # Offline: SQLite and hashed embeddings, in-memory Redis; Keycloak and OPA-only tests are skipped.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
-      - run: pip install -r backend/requirements.txt
+      - run: pip install -r backend/requirements-dev.txt
       - run: python -m pytest tests -q
         working-directory: backend
+
+  backend-live:
+    # Against real Qdrant, Neo4j, OPA and Keycloak (realm import).
+    runs-on: ubuntu-latest
+    services:
+      qdrant:
+        image: qdrant/qdrant:v1.20.0
+        ports: ['6333:6333']
+      neo4j:
+        image: neo4j:5.26-community
+        env:
+          NEO4J_AUTH: neo4j/ci-neo4j-password
+        ports: ['7687:7687']
+        options: >-
+          --health-cmd "cypher-shell -u neo4j -p ci-neo4j-password 'RETURN 1'"
+          --health-interval 10s --health-timeout 10s --health-retries 30
+    env:
+      KAG_VECTOR_BACKEND: qdrant
+      QDRANT_URL: http://localhost:6333
+      KAG_GRAPH_BACKEND: neo4j
+      NEO4J_URI: bolt://localhost:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ci-neo4j-password
+      OPA_TEST_URL: http://localhost:8181
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install -r backend/requirements-dev.txt
+      - name: Start OPA with the education policy
+        run: |
+          docker run -d --name opa -p 8181:8181 \
+            -v "$GITHUB_WORKSPACE/deployment/policies:/policies:ro" \
+            openpolicyagent/opa:latest-static run --server --addr=0.0.0.0:8181 /policies
+          for i in $(seq 1 30); do curl -sf localhost:8181/health >/dev/null && break; sleep 2; done
+      - name: Start Keycloak with the education realm
+        run: |
+          docker run -d --name keycloak -p 8080:8080 \
+            -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=ci-admin-password \
+            -e KC_HTTP_RELATIVE_PATH=/auth -e KC_HOSTNAME=https://localhost:8443/auth -e KC_PROXY_HEADERS=xforwarded \
+            -v "$GITHUB_WORKSPACE/deployment/keycloak:/opt/keycloak/data/import:ro" \
+            quay.io/keycloak/keycloak:26.4 start-dev --import-realm
+          for i in $(seq 1 60); do curl -sf localhost:8080/auth/realms/education/.well-known/openid-configuration >/dev/null && break; sleep 3; done
+      - run: python -m pytest tests -q
+        working-directory: backend
+        env:
+          KEYCLOAK_TOKEN_URL: http://localhost:8080/auth/realms/education/protocol/openid-connect/token
+          OIDC_JWKS_URL: http://localhost:8080/auth/realms/education/protocol/openid-connect/certs
+
+  deployment:
+    # Validates the compose file and builds the backend images without starting containers.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp deployment/.env.example deployment/.env
+      - run: docker compose --env-file deployment/.env -f deployment/compose.yaml --profile app config --quiet
+      - run: docker build -f backend/Dockerfile backend
+      - run: docker build -f backend/Dockerfile.source backend
+      - run: docker build -f backend/Dockerfile.worker backend
+
   frontend:
     runs-on: ubuntu-latest
     steps:

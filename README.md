@@ -1,110 +1,85 @@
 # Northstar — Educational KAG application
 
-Working local pilot: Next.js / React, FastAPI, SQLite, LangGraph, hybrid retrieval, NetworkX learning-path reasoning, and optional Amazon Bedrock generation.
+A synthetic-data pilot of a knowledge-augmented guidance platform for education. It has student, teacher, advisor and administrator portals; a prerequisite rule model with ALL/ANY groups, effective dates and waivers; hybrid retrieval over chunked curriculum; and optional Amazon Bedrock generation with evidence-only fallback.
 
-**Web:** http://localhost:3000 · **API documentation:** http://localhost:8000/docs
+Services: Next.js web app · FastAPI API · source service (the only process that owns SQLite) · worker and scheduler (RQ on Redis) · Qdrant · Neo4j · Keycloak (OIDC) · OPA (policy) · Caddy gateway.
 
-Choose a Student, Teacher, Advisor, or Admin account on the sign-in screen. Default demo password: **`demo-pass-2026`**.
+## Run the full stack (Docker)
 
-## Run locally
+Requirements: Docker Compose v2 on Linux containers. Set up the environment file once:
 
-Requires Python 3.11+ and Node.js 20.9+.
+```powershell
+Copy-Item deployment/.env.example deployment/.env
+# Replace each REPLACE_WITH_... value with a random secret and each image digest with a reviewed digest.
+docker compose --env-file deployment/.env -f deployment/compose.yaml --profile app up -d --build
+```
+
+Open **https://localhost:8443** (the gateway uses a local certificate authority; accept or trust it). Stop with `docker compose -f deployment/compose.yaml --profile app down`. Details, secrets handling and limits are in [deployment/README.md](deployment/README.md).
+
+Demo accounts (password `demo-pass-2026`): `student@northstar.demo`, `teacher@northstar.demo`, `advisor@northstar.demo`, `admin@northstar.demo`. Accounts and passwords are defined in [deployment/keycloak/education-realm.json](deployment/keycloak/education-realm.json) and are for synthetic data only.
+
+## Run locally without Docker
+
+Requires Python 3.11+, Node.js 20.9+, and a Keycloak with the education realm on `localhost:8080` (the realm file above; start it with `start-dev --import-realm`).
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
-```
-
-This creates `.venv`, installs dependencies, starts both processes, and checks readiness. Logs are in `.runtime/`. Use `-SkipInstall` on subsequent launches when dependencies are installed. Stop with:
-
-```powershell
 powershell -ExecutionPolicy Bypass -File scripts/stop-local.ps1
 ```
 
-Manual launch in two terminals:
+The script starts the source service (8001), the API (8000) and the web app (3000), using inline jobs and offline indexes. Logs are in `.runtime/`.
+
+## Tests
 
 ```powershell
-# Terminal 1: repository root
-.venv/Scripts/python.exe -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000 --no-access-log
-# Terminal 2
-cd frontend
-npm run dev
+cd backend
+python -m pip install -r requirements-dev.txt
+python -m pytest tests -q                       # offline: SQLite, hashed embeddings, in-memory Redis
 ```
 
-## Run with Docker
+Live integration tests run when their services are configured (they are skipped otherwise):
 
-```powershell
-docker compose up --build -d
-docker compose ps
-```
+- `KAG_VECTOR_BACKEND=qdrant QDRANT_URL=http://localhost:6333` and `KAG_GRAPH_BACKEND=neo4j NEO4J_URI=bolt://localhost:7687 NEO4J_PASSWORD=...` run the same suite against Qdrant and Neo4j.
+- `OPA_TEST_URL=http://localhost:8181` checks the Rego policy against the in-process rule.
+- `KEYCLOAK_TOKEN_URL=... OIDC_JWKS_URL=...` validates tokens issued by the realm.
 
-The root [compose.yaml](compose.yaml) builds both application images and persists SQLite in the `education_data` volume. Ports bind to loopback. One API worker owns the database. Stop with `docker compose down`; preserve the volume for persistent data. The older `deployment/compose.yaml` is an architecture reference, not this application's launcher.
+Frontend: `npm run build` in `frontend/`.
 
-## Working features
+## Features
 
-- Responsive student/faculty/advisor/admin portals with session login and sign-out.
-- Expiring HttpOnly session cookies, PBKDF2 password hashing, throttling, origin checks, tenant filtering, and student-object access controls.
-- Curriculum search, source inspection, illustrative standards, interactive knowledge graph and accessible relationship table.
-- LangGraph retrieval/reasoning/generation workflow with local BM25 + deterministic hashed-vector ranking and SSE results.
-- Deterministic prerequisite ordering and three-valued mastery: demonstrated, below the demo threshold, or unknown.
-- Admin text ingestion, durable job status, idempotency checks, transactional resource publication and generation updates.
-- Persistent feedback tied to owned queries and redacted audit metadata.
-- Optional Bedrock explanations; evidence-only fallback when AWS is absent or a response fails validation.
+- **Portals.** Student workspace (path, assistant, curriculum, graph); teacher portal (roster, prerequisite path with rule groups, waivers); advisor portal (caseload, skill gaps, cited advising briefs); administrator (ingestion, audit).
+- **Identity.** Keycloak-issued RS256 tokens validated for signature, issuer, audience and expiry; each token's tenant, user and role are cross-checked against the source service.
+- **Authorization.** A student record needs a current grant, the same tenant, and a purpose the caller's role may use: teachers for instruction, advisors for advising, students for their own self-service view. Administrators hold no record purpose. OPA evaluates the same rule when configured; both fail closed.
+- **Rules.** Prerequisites are AND/OR groups (`ALL` / `ANY`), effective-dated, and can be waived per student with a documented reason, an effective window and revocation. Cycles are rejected across every rule, including future-dated ones. Missing evidence is "unknown", not failure. The mastery threshold comes from the academic policy.
+- **Ingestion.** Queued through Redis to the worker. Validation, content-addressed identity (duplicate content converges), entity linking, sentence-based chunking, embedding, indexing, then an atomic commit with a generation compare-and-swap. Failed jobs publish nothing.
+- **Retrieval.** BM25 over published resources plus chunk-level vector ranking (Qdrant, or offline hashed vectors). Lexical match is always required, so vector collisions alone cannot establish relevance.
+- **Redis.** Job queue, API rate limiting, login-failure lockout, and a query-answer cache keyed by tenant, published generation and question.
+- **Maintenance.** The scheduler purges expired web-cache results every few hours, removing them from SQLite and then from Qdrant and Neo4j.
+- **Generation.** Optional Bedrock explanations (Converse API) validated against an output schema and cited evidence IDs; evidence-only answers otherwise.
+
+## Limits
+
+This is a **synthetic-data pilot**. Not production-ready:
+
+- Login uses the Keycloak password grant so the existing form works; production uses Authorization Code with PKCE through the gateway.
+- Access tokens are not revocable; logout removes the cookie only. Keep token lifetime short.
+- The source service authenticates callers with a shared service token; production needs workload identity (mTLS or signed service tokens).
+- Embeddings: the offline mode uses hashed vectors, which are not a trained model. Qdrant mode uses Amazon Titan Text Embeddings v2 when `BEDROCK_EMBED_MODEL_ID` is set; that path is covered by mocked tests only, not a live model call.
+- Single source-service process owning SQLite. Not for multi-host deployment.
+- Rules are seeded with the demo curriculum; there is no rule-authoring screen.
+- Imports accept plain text, not PDF or OCR.
+- No AWS infrastructure is provisioned. Enterprise TLS, backups, monitoring and retention workflows are deployment work.
 
 ## Data and authorization
 
-All fixtures are synthetic. `DEMO-READINESS-*` identifiers are **not official state-standard codes**. The 80% mastery threshold is illustrative. Answers are advisory, and no enrollment, grading, placement or eligibility actions occur.
+All fixtures are synthetic. `DEMO-READINESS-*` identifiers are **not official state-standard codes**. The 80% mastery threshold is illustrative. Answers are advisory; no enrollment, grading, placement or eligibility decision is made.
 
-Student sees Alex; Teacher sees Alex and Jamie; Advisor sees Alex. Admin manages curriculum and audit metadata but has no student-record grants. A separate inaccessible tenant is seeded for isolation tests. Tenant IDs are derived from the authenticated session.
+Student sees Alex; teacher sees Alex and Jamie; advisor sees Alex. A separate tenant is seeded for isolation tests.
 
-API account emails are `student@northstar.demo`, `teacher@northstar.demo`, `advisor@northstar.demo`, and `admin@northstar.demo`. SQLite is in `backend/data/education.db`; set `KAG_DATA_DIR` to change it. Accounts seed only once. Changing `KAG_DEMO_PASSWORD` affects only initial seeding, not existing password hashes.
+## Documentation
 
-## Optional Bedrock
-
-Set `AWS_REGION` and an account-enabled `BEDROCK_MODEL_ID` in `backend/.env` or the backend process environment before launch. The backend automatically loads `backend/.env` without overriding process variables. Compose passes optional root `.env` and `backend/.env` files to the API container (the backend file takes precedence). Recreate the API container after editing an env file; a plain restart does not reload Compose environment settings.
-
-```powershell
-$env:AWS_REGION = 'your-approved-region'
-$env:BEDROCK_MODEL_ID = 'your-enabled-model-id'
-powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1 -SkipInstall
-```
-
-For a Bedrock API key, set `AWS_BEARER_TOKEN_BEDROCK` in `backend/.env`; the installed Boto3 version supports it. Alternatively configure short-lived credentials through the SDK credential chain or a workload role. No keys belong in frontend code. Env files are Git-ignored and excluded from the Docker build context; credentials are injected at runtime. Compose intentionally does not mount your home credential directory. Model inference can incur charges. AI explanations are separately labeled; shape/citation-ID checks are **not a full semantic grounding guarantee**. Deterministic source evidence and rule outcomes remain separate.
-
-Configured model (10 November 2026): `us.anthropic.claude-fable-5-2`, with the US geographic inference profile and `AWS_REGION=us-east-1`. This can route inference across US AWS regions; it is not a single-region deployment guarantee. [AWS model details](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5-2.html). Fable uses low reasoning effort for this application; `BEDROCK_MAX_OUTPUT_TOKENS` defaults to 2048 and is capped at 4096. Keep model changes explicit rather than silently following a changing latest alias.
-
-After changing `backend/.env`:
-
-```powershell
-docker compose up -d --build api
-```
-
-## Validation
-
-```powershell
-# From backend/
-../.venv/Scripts/python.exe -m pytest tests -q
-# From frontend/
-npm run build
-```
-
-Integration tests use isolated SQLite and real API/session/orchestration code to check tenant/student isolation, admin boundaries, mastery semantics, prerequisite ordering, SSE, feedback ownership, source resolution, idempotency and retrieval after import.
-
-## Deployment boundaries
-
-This is a runnable **local pilot**, not the entire enterprise architecture. Runtime uses local sessions rather than Keycloak/OPA, BM25/hashed vectors rather than Qdrant/Sentence Transformers, and SQLite/NetworkX rather than a Neo4j server. Ingestion uses FastAPI background tasks and a durable SQLite job ledger rather than Celery/Redis; interrupted jobs are marked failed after restart and can be resubmitted with a new key. Imports accept plain text, not PDF/OCR. External services are not silently simulated.
-
-Startup refuses `KAG_DEMO_MODE=false`. Production SSO, external indexes, TLS, governance, retention/deletion workflows, distributed workers, monitoring, backups, restoration and AWS IaC remain production work before real student data. The local app uses HTTP on loopback; enterprise HTTPS remains a deployment gate. Docker volumes alone are not encryption or backup.
-
-## Original architecture reference
-
-[Download the historical design-only package](educational-kag-architecture.zip). This archive excludes the application source added afterward.
-
-- [Detailed architecture and all ten deliverables](docs/architecture.md)
-- [Logical architecture — 4K PNG](diagrams/logical-architecture.png) · [editable SVG](diagrams/logical-architecture.svg)
-- [AWS deployment — 4K PNG](diagrams/aws-deployment.png) · [editable SVG](diagrams/aws-deployment.svg)
-- [Query sequence — 4K PNG](diagrams/query-sequence.png) · [editable SVG](diagrams/query-sequence.svg)
-- [Knowledge graph model — 4K PNG](diagrams/knowledge-graph.png) · [editable SVG](diagrams/knowledge-graph.svg)
-- [Docker Compose blueprint](deployment/compose.yaml) · [setup and limitations](deployment/README.md)
-- [FastAPI implementation structure](implementation/STRUCTURE.md) · [typed contracts](implementation/contracts.py)- [Diagram source and regeneration](tools/render_diagrams.py)
-
-The documents above describe the wider target architecture. Runtime entry points are [backend/app/main.py](backend/app/main.py), [backend/app/kag.py](backend/app/kag.py), [frontend/app/page.tsx](frontend/app/page.tsx), and the root [compose.yaml](compose.yaml). No AWS infrastructure has been provisioned.
+- [Architecture and deliverables](docs/architecture.md)
+- [Logical architecture](diagrams/logical-architecture.svg) · [AWS deployment](diagrams/aws-deployment.svg) · [Query sequence](diagrams/query-sequence.svg) · [Knowledge graph model](diagrams/knowledge-graph.svg)
+- [Deployment and limits](deployment/README.md) · [Compose stack](deployment/compose.yaml)
+- [Module structure](implementation/STRUCTURE.md) · [Typed contracts](backend/app/contracts.py)
+- [Historical design-only package](educational-kag-architecture.zip)

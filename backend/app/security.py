@@ -1,43 +1,24 @@
-import hashlib
-import hmac
-import os
-import secrets
-import time
-
+"""Request identity and student-record authorization."""
 from fastapi import Depends, HTTPException, Request
 
-from .db import db
-from .policy import allow_student_access
-
-
-def hash_password(password: str, salt: str | None = None) -> str:
-    salt = salt or secrets.token_hex(16)
-    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 260_000).hex()
-    return f"{salt}${digest}"
-
-
-def verify_password(password: str, stored: str) -> bool:
-    if "$" not in stored:
-        return False
-    salt, _ = stored.split("$", 1)
-    return hmac.compare_digest(hash_password(password, salt), stored)
-
-
-def new_session(user_id: str) -> str:
-    token = secrets.token_urlsafe(40)
-    with db() as connection:
-        connection.execute("DELETE FROM sessions WHERE expires_at < ?", (time.time(),))
-        connection.execute("INSERT INTO sessions VALUES (?,?,?)", (hashlib.sha256(token.encode()).hexdigest(), user_id, time.time() + 28800))
-    return token
+from . import auth
+from .policy import allow_student_access, purpose_for
+from .source_client import source
 
 
 def current_user(request: Request) -> dict:
     token = request.cookies.get("kag_session", "")
-    with db() as connection:
-        row = connection.execute("SELECT u.id,u.tenant_id,u.name,u.email,u.role FROM users u JOIN sessions s ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>?", (hashlib.sha256(token.encode()).hexdigest(), time.time())).fetchone()
-    if not row:
+    if not token and request.headers.get("authorization", "").lower().startswith("bearer "):
+        token = request.headers["authorization"][7:].strip()
+    try:
+        claims = auth.verify(token)
+    except auth.TokenError:
         raise HTTPException(401, "Please sign in to continue")
-    return dict(row)
+    # Second check: the token's identity must exist in the source service with the same role.
+    identity = source().user_identity(claims["tenant_id"], claims["kag_user_id"])
+    if not identity or identity["role"] != claims["role"]:
+        raise HTTPException(401, "Please sign in to continue")
+    return {k: identity[k] for k in ("id", "tenant_id", "name", "email", "role")}
 
 
 def admin(user=Depends(current_user)):
@@ -46,16 +27,17 @@ def admin(user=Depends(current_user)):
     return user
 
 
-def student_access(user: dict, student_id: str):
-    with db() as connection:
-        student = connection.execute("SELECT * FROM students WHERE id=? AND tenant_id=?", (student_id, user["tenant_id"])).fetchone()
-        grant = connection.execute("SELECT 1 FROM access_grants WHERE user_id=? AND student_id=?", (user["id"], student_id)).fetchone() if student else None
-    # Same 404 for "missing", "other tenant" and "no grant" so IDs cannot be enumerated.
-    if not student or not allow_student_access(user, dict(student), grant is not None):
+def student_access(user: dict, student_id: str, purpose: str | None = None):
+    """Return the student record if the caller may act on it for `purpose`; otherwise 404.
+
+    Missing, other-tenant, ungranted and wrong-purpose cases all return the same 404 so IDs cannot
+    be enumerated.
+    """
+    purpose = purpose or purpose_for(user["role"])
+    student = source().student(user["tenant_id"], student_id)
+    if not student:
         raise HTTPException(404, "Student not found in your authorized scope")
-    return dict(student)
-
-
-def enforce_local_demo():
-    if os.getenv("KAG_DEMO_MODE", "true").lower() != "true":
-        raise RuntimeError("This release is a synthetic-data pilot. Production identity/governance must be implemented before disabling demo mode.")
+    granted = source().is_granted(user["tenant_id"], user["id"], student_id)
+    if purpose is None or not allow_student_access(user, student, granted, purpose):
+        raise HTTPException(404, "Student not found in your authorized scope")
+    return student

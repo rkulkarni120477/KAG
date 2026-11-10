@@ -7,9 +7,10 @@ import boto3
 from botocore.config import Config
 from langgraph.graph import END, START, StateGraph
 
-from .db import db
+from .contracts import AIDraft
 from .reasoning import learning_path
 from .retrieval import retrieve
+from .source_client import source
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +36,7 @@ def generate(state: State):
     evidence = state["evidence"]
     path = state["path"]
     tenant = state["user"]["tenant_id"]
-    with db() as connection:
-        manifest = connection.execute("SELECT generation FROM index_manifests WHERE tenant_id=?", (tenant,)).fetchone()
+    manifest = source().manifest(tenant)
     citations = [{"id":d["id"],"title":d["title"],"source_version":d["source_version"],"locator":"Full text","source_uri":d["source_uri"],"excerpt":d["text"][:600],"illustrative":d["source_uri"].startswith("demo://")} for d in evidence]
     relevant_ids = {d["skill_id"] for d in evidence if d["skill_id"]}
     # Only explicit path-intent phrases trigger the full learning path. Broad words
@@ -70,7 +70,7 @@ def generate(state: State):
             text = "".join(b["text"] for b in response["output"]["message"]["content"] if "text" in b).strip()
             if text.startswith("```"):
                 text = text.strip("`").removeprefix("json").strip()
-            draft = json.loads(text)
+            draft = AIDraft.model_validate(json.loads(text)).model_dump()
             valid = {d["id"] for d in citations}
             if not isinstance(draft.get("explanation"),str) or not draft.get("evidence_ids") or not isinstance(draft["evidence_ids"],list) or not all(isinstance(i,str) and i in valid for i in draft["evidence_ids"]):
                 raise ValueError("Unsupported citation IDs")
@@ -90,7 +90,7 @@ def generate(state: State):
     # Label answers whose evidence came from the web so users know it is not curriculum-authored.
     if any(d["source_uri"].startswith(("http://", "https://")) for d in evidence):
         generator += " · web sources"
-    return {"result":{"answer":answer,"ai_explanation":ai_explanation,"evidence":citations,"steps":steps,"generator":generator,"warning":warning,"manifest":manifest["generation"] if manifest else 0,"completeness":"partial" if any(s["status"] == "unknown" for s in steps) else "supported" if evidence else "insufficient","advisory_only":True,"notice":"All seeded curriculum, standards, and student records are synthetic. No official state-standard claims are made."}}
+    return {"result":{"answer":answer,"ai_explanation":ai_explanation,"evidence":citations,"steps":steps,"generator":generator,"warning":warning,"manifest":manifest["generation"],"completeness":"partial" if any(s["status"] == "unknown" for s in steps) else "supported" if evidence else "insufficient","advisory_only":True,"notice":"All seeded curriculum, standards, and student records are synthetic. No official state-standard claims are made."}}
 
 
 builder = StateGraph(State)

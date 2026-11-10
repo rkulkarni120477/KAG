@@ -1,6 +1,24 @@
-# Architecture blueprint. Configure approved image digests and credentials first.
-# Default: dependency services. --profile app adds implementation-dependent images.
+# Full local stack. Dependency services start by default; the `app` profile adds the application services.
+#   docker compose --env-file .env --profile app up -d --build
 name: education-kag
+
+x-backend-env: &backend_env
+  SOURCE_URL: http://source:8001
+  SOURCE_SERVICE_TOKEN: ${SOURCE_SERVICE_TOKEN:?Set the internal service token}
+  KAG_QUEUE_MODE: redis
+  REDIS_URL: redis://:${REDIS_PASSWORD:?Set Redis password}@redis:6379/0
+  KAG_VECTOR_BACKEND: qdrant
+  KAG_GRAPH_BACKEND: neo4j
+  QDRANT_URL: http://qdrant:6333
+  QDRANT_API_KEY: ${QDRANT_API_KEY:?Set Qdrant API key}
+  NEO4J_URI: bolt://neo4j:7687
+  NEO4J_USER: neo4j
+  NEO4J_PASSWORD: ${NEO4J_PASSWORD:?Set Neo4j password}
+  BEDROCK_EMBED_MODEL_ID: ${BEDROCK_EMBED_MODEL_ID:-}
+  AWS_REGION: ${AWS_REGION:?Set AWS region}
+  BEDROCK_MODEL_ID: ${BEDROCK_MODEL_ID:-}
+  WEB_SEARCH_ENABLED: ${WEB_SEARCH_ENABLED:-false}
+  WEB_CACHE_DAYS: ${WEB_CACHE_DAYS:-30}
 
 services:
   qdrant:
@@ -45,7 +63,7 @@ services:
 
   keycloak:
     image: ${KEYCLOAK_IMAGE:?Set approved Keycloak image digest}
-    command: [start-dev]
+    command: [start-dev, --import-realm]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:?Set local admin user}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set local admin password}
@@ -53,6 +71,7 @@ services:
       KC_HOSTNAME: https://localhost:8443/auth
       KC_PROXY_HEADERS: xforwarded
     volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
       - keycloak_data:/opt/keycloak/data
     networks: [knowledge]
     restart: unless-stopped
@@ -68,14 +87,13 @@ services:
   source:
     profiles: [app]
     image: ${SOURCE_IMAGE:-kag-source:local}
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.source
     environment:
-      DATABASE_URL: sqlite:////data/education.db
-      OIDC_ISSUER: https://localhost:8443/auth/realms/education
-      OPA_URL: http://opa:8181
-      SOURCE_SERVICE_AUDIENCE: kag-source
+      SOURCE_SERVICE_TOKEN: ${SOURCE_SERVICE_TOKEN:?Set the internal service token}
     volumes:
       - sqlite_data:/data
-      - documents:/documents
     healthcheck:
       test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/internal/health', timeout=3)"]
       interval: 20s
@@ -87,23 +105,18 @@ services:
   api:
     profiles: [app]
     image: ${API_IMAGE:-kag-api:local}
-    environment: &backend_env
-      SOURCE_URL: http://source:8001
-      SOURCE_SERVICE_AUDIENCE: kag-source
-      KAG_VECTOR_BACKEND: qdrant
-      KAG_GRAPH_BACKEND: neo4j
-      QDRANT_URL: http://qdrant:6333
-      QDRANT_API_KEY: ${QDRANT_API_KEY:?Set Qdrant API key}
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_USER: neo4j
-      NEO4J_PASSWORD: ${NEO4J_PASSWORD:?Set Neo4j password}
-      REDIS_HOST: redis
-      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set Redis password}
-      OPA_URL: http://opa:8181
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    environment:
+      <<: *backend_env
       OIDC_ISSUER: https://localhost:8443/auth/realms/education
+      OIDC_JWKS_URL: http://keycloak:8080/auth/realms/education/protocol/openid-connect/certs
+      OIDC_TOKEN_URL: http://keycloak:8080/auth/realms/education/protocol/openid-connect/token
       OIDC_AUDIENCE: kag-api
-      AWS_REGION: ${AWS_REGION:?Set AWS region}
-      BEDROCK_MODEL_ID: ${BEDROCK_MODEL_ID:?Set enabled Bedrock model ID}
+      OIDC_CLIENT_ID: kag-web
+      OPA_URL: http://opa:8181
+      KAG_COOKIE_SECURE: "true"
       OTEL_SERVICE_NAME: kag-api
     depends_on:
       source: {condition: service_healthy}
@@ -123,25 +136,27 @@ services:
   worker:
     profiles: [app]
     image: ${WORKER_IMAGE:-kag-worker:local}
-    command: [celery, -A, app.celery_app, worker, --loglevel=INFO, --concurrency=2]
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.worker
     environment:
       <<: *backend_env
       OTEL_SERVICE_NAME: kag-worker
     depends_on:
       source: {condition: service_healthy}
       redis: {condition: service_healthy}
+      neo4j: {condition: service_healthy}
+      qdrant: {condition: service_started}
     networks: [knowledge, egress]
     restart: unless-stopped
 
   scheduler:
     profiles: [app]
     image: ${WORKER_IMAGE:-kag-worker:local}
-    command: [celery, -A, app.celery_app, beat, --loglevel=INFO, --schedule=/schedule/celerybeat]
+    command: [python, -m, app.worker, scheduler]
     environment:
       <<: *backend_env
       OTEL_SERVICE_NAME: kag-scheduler
-    volumes:
-      - scheduler_data:/schedule
     depends_on:
       source: {condition: service_healthy}
       redis: {condition: service_healthy}
@@ -151,10 +166,8 @@ services:
   web:
     profiles: [app]
     image: ${WEB_IMAGE:-kag-web:local}
-    environment:
-      API_INTERNAL_URL: http://api:8000
-      APP_ORIGIN: https://localhost:8443
-      OIDC_ISSUER: https://localhost:8443/auth/realms/education
+    build:
+      context: ../frontend
     depends_on:
       api: {condition: service_healthy}
     networks: [knowledge, egress]
@@ -181,12 +194,10 @@ networks:
 
 volumes:
   sqlite_data: {}
-  documents: {}
   qdrant_data: {}
   neo4j_data: {}
   neo4j_logs: {}
   redis_data: {}
   keycloak_data: {}
-  scheduler_data: {}
   caddy_data: {}
   caddy_config: {}

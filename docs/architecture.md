@@ -24,7 +24,7 @@ Planning assumptions, **not measured capacity claims**: 1–3 pilot institutions
 | Decision | Baseline | Consequence / production gate |
 |---|---|---|
 | Authoritative records | SQLite plus versioned source documents | Qdrant and Neo4j are rebuildable projections. Files, source versions, and approvals remain traceable. |
-| SQLite owner | One internal FastAPI source-service process on one host | All SQL reads/writes and outbox commits pass through this owner; API replicas and Celery workers use its authenticated internal API. |
+| SQLite owner | One internal FastAPI source-service process on one host | All SQL reads/writes and outbox commits pass through this owner; API replicas and RQ workers use its authenticated internal API. |
 | Graph | Neo4j Community Edition | Single instance; enforce tenant/student authorization in application queries. No assumed native fine-grained RBAC or automatic HA. |
 | Vector search | Qdrant dense + lexical sparse vectors | Explicit tenant/ACL filters on both branches; fuse rankings and evaluate retrieval quality. |
 | Reasoning | Versioned deterministic Python modules | LLMs cannot create official facts, change mastery, or execute academic decisions. |
@@ -142,7 +142,7 @@ An extraction confidence does not confer authority. Draft mappings and inferred 
 
 ```mermaid
 flowchart LR
-  A[SQLite owner: transaction + outbox] -. committed event .-> B[Celery dispatcher / Redis]
+  A[SQLite owner: transaction + outbox] -. committed event .-> B[RQ dispatcher / Redis]
   D[Versioned source documents] -. approved import .-> B
   B -. job .-> C[Extract / validate / normalize]
   C -. canonical IDs + provenance .-> E[Resolve entities / validate relations]
@@ -155,7 +155,7 @@ flowchart LR
 
 This pipeline runs independently of chat requests. An authorized ingestion submission returns a job reference; it never indexes synchronously on a chat request. PyMuPDF or Unstructured extracts text and layout in isolated workers with CPU/memory/time/file-size limits, malware screening and blocked outbound fetches. OCR, when needed, adds a reviewed Tesseract dependency. Restrict allowed source URI schemes and S3 prefixes to avoid SSRF.
 
-1. Commit source changes and an outbox event in the **same SQLite transaction**. Source writes cannot depend on Redis availability. A poller leases events through the source-service and dispatches Celery tasks; lost dispatches are retried.
+1. Commit source changes and an outbox event in the **same SQLite transaction**. Source writes cannot depend on Redis availability. A poller leases events through the source-service and dispatches RQ jobs; lost dispatches are retried.
 2. Deduplicate at-least-once delivery with `(tenant, entity, source_version, operation, pipeline_revision)` and an immutable job ledger. Persist job outcomes in the source-service rather than relying on Redis task-result history. Use JSON task serialization; never pickle untrusted payloads.
 3. Pin a consistent source snapshot/high-water mark. Extract, normalize IDs, validate relations, and route ambiguous records to steward review. Preserve external authority identifiers exactly.
 4. Build a **complete tenant generation** in staging: start with a copy of the last published graph/vector projection and apply changed records, or rebuild fully for a small pilot. Incremental processing must retain unchanged records. Do not change a shared alias or mutate active edges during staging.
@@ -164,7 +164,7 @@ This pipeline runs independently of chat requests. An authorized ingestion submi
 7. Atomically change the tenant's active manifest **in SQLite** only after both projections pass. Manifest contains source snapshot, graph generation, Qdrant collection/generation, embedding revision, chunker revision and rule version. There is no distributed transaction across three databases. Queries pin the manifest once and explicitly filter that generation in both indexes; never resolve two independently switched aliases.
 8. Retain the previous generation until in-flight requests expire, then remove according to retention policy. Roll back via an approved manifest CAS, provided it does not resurrect deleted or revoked content. Run scheduled source-to-index reconciliation and rebuild damaged projections from authoritative versions.
 
-Exponential backoff with jitter, bounded attempts, poison-job quarantine, per-tenant ordering, queue depth and oldest-event alerts are required. A worker crash after one index write cannot publish half a generation. Celery periodic scheduling runs as one beat instance. Redis AOF improves queue durability, but the outbox remains the replay source.
+Exponential backoff with jitter, bounded attempts, poison-job quarantine, per-tenant ordering, queue depth and oldest-event alerts are required. A worker crash after one index write cannot publish half a generation. Scheduled purgeduling runs as one beat instance. Redis AOF improves queue durability, but the outbox remains the replay source.
 
 **Deletion and revocation are not delayed by index publication:** the current source ACL and tombstone denylist apply during retrieval and again before display, including older pinned generations. Source reads provide current student facts, while catalog queries use their pinned edition; the response records both timestamps. Recheck current official rules for consequential advisory results. Purge caches, checkpoints, document copies and embeddings; maintain minimal deletion proof. Restore procedures replay tombstones before reopening service, and expired backups age out under policy.
 
@@ -313,7 +313,7 @@ Dedicated private EC2 hosts run the source-service + SQLite, Neo4j Community, Qd
 
 Do not assume ECS service-managed EBS retains a database through task replacement: AWS documents that volumes attached to service-managed tasks are deleted at termination. This design uses dedicated EC2-managed persistent volumes and explicit recovery automation instead. [ECS EBS lifecycle](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/configure-ebs-volume.html).
 
-Keycloak uses a separate PostgreSQL identity database in AWS, preferably managed RDS Multi-AZ when required. This database stores identity state, not the initial educational knowledge source. Local Keycloak development mode uses its own persisted development store. OPA is colocated with API replicas or supplied through an authenticated internal policy service, with signed/versioned policy bundles. Redis is the Celery broker; outbox replay is mandatory. Staging rebuilds use a separate write identity and bounded worker pools.
+Keycloak uses a separate PostgreSQL identity database in AWS, preferably managed RDS Multi-AZ when required. This database stores identity state, not the initial educational knowledge source. Local Keycloak development mode uses its own persisted development store. OPA is colocated with API replicas or supplied through an authenticated internal policy service, with signed/versioned policy bundles. Redis is the RQ queue broker; outbox replay is mandatory. Staging rebuilds use a separate write identity and bounded worker pools.
 
 IAM task roles permit only required Bedrock invocation/model resources, Secrets Manager secrets and S3 prefixes. Use workload roles instead of static access keys; Boto3's default credential chain serves both local short-lived credentials and AWS roles. Use Bedrock Runtime, S3, ECR, logs and secrets VPC endpoints where available. Validate regional support and endpoint policies. Bedrock invocation occurs only server-side. Disable cross-region inference routing until data-location approval; some inference profiles can route across regions, so an environment region alone does not establish residency.
 
@@ -348,7 +348,7 @@ Licenses below describe upstream projects, **not every transitive dependency or 
 | Graph | [Neo4j Community](https://neo4j.com/licensing/) — GPLv3 | [Apache AGE](https://github.com/apache/age/blob/master/LICENSE) — Apache-2.0 on PostgreSQL. |
 | Deterministic reasoning | [Python](https://docs.python.org/3/license.html) — PSF; [NetworkX](https://github.com/networkx/networkx/blob/main/LICENSE.txt) — BSD-3-Clause | Explicit graph algorithms; no LLM required for official rules. |
 | PDF / document ETL | [PyMuPDF](https://github.com/pymupdf/PyMuPDF/blob/main/COPYING) — AGPLv3, commercial option; [Unstructured core](https://github.com/Unstructured-IO/unstructured/blob/main/LICENSE.md) — Apache-2.0 | pypdf, BSD-3-Clause; pdfplumber, MIT. Review OCR/parser native dependencies. |
-| Async jobs | [Celery](https://github.com/celery/celery/blob/main/LICENSE) — BSD-3-Clause; [Redis 8](https://github.com/redis/redis/blob/8.0/LICENSE.txt) — choose AGPLv3 for open-source route, or RSALv2 / SSPLv1 under their terms | [Valkey](https://github.com/valkey-io/valkey/blob/unstable/COPYING), BSD-3-Clause, after Celery transport compatibility tests; RabbitMQ, MPL-2.0. |
+| Async jobs | [RQ](https://github.com/rq/rq) — open-source Redis queue library; verify its license before release; [Redis 8](https://github.com/redis/redis/blob/8.0/LICENSE.txt) — choose AGPLv3 for open-source route, or RSALv2 / SSPLv1 under their terms | [Valkey](https://github.com/valkey-io/valkey/blob/unstable/COPYING), BSD-3-Clause, after RQ transport compatibility tests; RabbitMQ, MPL-2.0. |
 | Identity / policy | [Keycloak](https://github.com/keycloak/keycloak/blob/main/LICENSE.txt), [OPA](https://github.com/open-policy-agent/opa/blob/main/LICENSE) — Apache-2.0 | Authentik, MIT core; Casbin, Apache-2.0. |
 | Telemetry | [OpenTelemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/LICENSE), [Prometheus](https://github.com/prometheus/prometheus/blob/main/LICENSE) — Apache-2.0; [Grafana OSS](https://github.com/grafana/grafana/blob/main/LICENSE) — AGPLv3 | Jaeger, Apache-2.0, for optional trace storage; hosted CloudWatch is AWS proprietary. |
 | Graph UI / TLS edge | [Cytoscape.js](https://github.com/cytoscape/cytoscape.js/blob/unstable/LICENSE) — MIT; [Caddy](https://github.com/caddyserver/caddy/blob/master/LICENSE) — Apache-2.0 | Accessible table; NGINX, BSD-2-Clause. |
@@ -359,7 +359,7 @@ Redis 8 is not accurately described as BSD-only. Choose its AGPLv3 option with a
 
 ## 11. Python / FastAPI implementation structure
 
-See [the full module structure](../implementation/STRUCTURE.md) and [typed contracts](../implementation/contracts.py). The contracts are a design asset and standalone example; the Bedrock generation adapter now lives in `backend/app/kag.py`.
+See [the module structure](../implementation/STRUCTURE.md). The typed contracts are implemented in [backend/app/contracts.py](../backend/app/contracts.py) and used for request validation, response models and AI-output checks.
 
 Keep domain rules independent of LangChain, Bedrock and database clients. Define ports for `SourceRepository`, `VectorRetriever`, `GraphRepository`, `PolicyDecisionPoint`, `EvidenceResolver`, `Generator`, and `ManifestRepository`; integration adapters receive an `AuthorizedScope` and pinned `Manifest` rather than raw tenant strings. Dependencies construct authenticated scope once, repository templates enforce it, and evidence delivery rechecks current rights.
 

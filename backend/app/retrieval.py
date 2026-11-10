@@ -1,21 +1,21 @@
-"""Hybrid retrieval: BM25 over published SQLite rows fused with a vector ranking.
+"""Hybrid retrieval: BM25 over published resources fused with a chunk-level vector ranking.
 
-The vector ranking comes from the configured index adapter (SQLite hash vectors offline, or
-Qdrant). Lexical matching is always required, so hash-vector collisions alone cannot establish
-relevance. Web fallback results are published through the same ingestion path as curriculum.
+Lexical matching is always required, so vector collisions alone cannot establish relevance. Online
+fallback results are published synchronously through the worker pipeline before they are cited, so every
+citation in an answer resolves to a published, authorized record.
 """
 import math
 from collections import Counter
 
 from . import web_search
-from .db import db
+from .domain.documents import content_resource_id, validate
 from .indexes import vector_index
-from .ingestion import publish, validate
-from .text import tokens
+from .source_client import source
+from .embeddings import tokens
+from .worker.pipeline import publish_documents
 
 # Question scaffolding ("which topics should I study before ...") carries no subject meaning.
-# Counting these words lets unrelated documents satisfy the lexical match and suppress the
-# online fallback.
+# Counting these words would let unrelated documents satisfy the lexical match.
 STOPWORDS = frozenset("""a an and are as at be before by can could do does for from get help how i in is it know learn
 learning me my need of on or prepare ready should study studying that the this to topics topic very want what when which
 who why will with you your""".split())
@@ -32,33 +32,28 @@ def retrieve(tenant_id: str, question: str, limit: int = 5):
     documents = []
     for row in fetched:
         try:
-            validate(row["title"], row["text"])
+            title, text = validate(row["title"], row["text"])
         except ValueError:
             continue
         documents.append({
-            "title": row["title"], "text": row["text"], "skill_id": None, "kind": "Web result",
+            "title": title, "text": text, "skill_id": None, "kind": "Web result",
             "source_uri": row["source_uri"], "source_version": row["retrieved_at"][:10],
             "created_at": row["retrieved_at"],
         })
     if not documents:
         return []
     label = keywords.strip().title()[:60] or "Web search"
-    published = publish(tenant_id, documents, topic_label=label)
-    # Answer from the rows just published for this question; they are now cached locally.
-    with db() as connection:
-        rows = [dict(r) for r in connection.execute(
-            f"SELECT * FROM resources WHERE tenant_id=? AND id IN ({','.join('?' * len(published['resource_ids']))})",
-            (tenant_id, *published["resource_ids"]))]
-    return [{**r, "skill_id": None, "relevance": 0.0} for r in rows][:limit]
+    published = publish_documents(tenant_id, documents, topic_label=label)
+    by_id = {content_resource_id(tenant_id, d["title"], d["text"]): d for d in documents}
+    return [{"id": rid, "title": by_id[rid]["title"], "text": by_id[rid]["text"], "skill_id": None,
+             "kind": "Web result", "source_uri": by_id[rid]["source_uri"], "source_version": by_id[rid]["source_version"],
+             "created_at": by_id[rid]["created_at"], "relevance": 0.0}
+            for rid in published["resource_ids"] if rid in by_id][:limit]
 
 
 def _search_local(tenant_id: str, question: str, limit: int = 5, exclude_web: bool = False):
-    with db() as connection:
-        generation_row = connection.execute("SELECT generation FROM index_manifests WHERE tenant_id=?", (tenant_id,)).fetchone()
-        generation = generation_row["generation"] if generation_row else 0
-        docs = [dict(r) for r in connection.execute(
-            "SELECT * FROM resources WHERE tenant_id=? AND auth_scope='curriculum' AND (? = 0 OR kind != 'Web result') ORDER BY id",
-            (tenant_id, int(exclude_web)))]
+    snap = source().snapshot(tenant_id, include_web=not exclude_web)
+    docs = snap["resources"]
     if not docs:
         return []
     query = {t for t in tokens(question) if t not in STOPWORDS}
@@ -74,7 +69,7 @@ def _search_local(tenant_id: str, question: str, limit: int = 5, exclude_web: bo
             bm25 += inverse * tf * 2.2 / (tf + 1.2 * (.25 + .75 * sum(count.values()) / avg_length))
         lexical.append((doc["id"], bm25))
     lexical.sort(key=lambda x: x[1], reverse=True)
-    vector = vector_index().rank(tenant_id, generation, question, docs)
+    vector = vector_index().rank(tenant_id, snap["generation"], question, docs)
     scores = Counter()
     for ranking in [lexical, vector]:
         for rank, (sid, score) in enumerate(ranking):

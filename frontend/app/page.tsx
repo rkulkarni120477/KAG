@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowDown, ArrowRight, ArrowUpRight, BookOpen, Check, CheckCheck, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Clock3, Database, FileText, GraduationCap, Layers3, LayoutDashboard, LogOut, MessageSquare, Network, Plus, Search, Send, Settings2, ShieldCheck, Sparkles, Target, ThumbsDown, ThumbsUp, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { homeFor } from "@/lib/api";
 
 type User = { id: string; name: string; role: string; email: string; tenant_id: string };
 type Student = { id: string; name: string; grade: number };
@@ -90,7 +91,7 @@ export default function Home() {
     setStudentId(current => data.students.some(s => s.id === current) ? current : data.students[0]?.id || "");
   }, []);
 
-  useEffect(() => { api<User>("/auth/me").then(setUser).catch(() => {}).finally(() => setBooting(false)); }, []);
+  useEffect(() => { api<User>("/auth/me").then(current => { if (current.role === "teacher" || current.role === "advisor") window.location.replace(homeFor(current.role)); else setUser(current); }).catch(() => {}).finally(() => setBooting(false)); }, []);
   useEffect(() => { if (user) refresh().catch(e => setError(e.message)); }, [user, refresh]);
   useEffect(() => {
     if (!user) return;
@@ -108,7 +109,7 @@ export default function Home() {
 
   async function login(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError("");
-    try { const signedIn = await api<User>("/auth/login", { method: "POST", body: JSON.stringify({ email: `${loginRole}@northstar.demo`, password }) }); setUser(signedIn); setView("overview"); } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
+    try { const signedIn = await api<User>("/auth/login", { method: "POST", body: JSON.stringify({ email: `${loginRole}@northstar.demo`, password }) }); if (signedIn.role === "teacher" || signedIn.role === "advisor") { window.location.assign(homeFor(signedIn.role)); return; } setUser(signedIn); setView("overview"); } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
   async function logout() {
     if (loggingOut) return;

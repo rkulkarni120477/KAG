@@ -1,41 +1,101 @@
-# Local Docker Compose blueprint
+# Deployment: Docker Compose stack
 
-This describes container topology; it does not include application images or a working platform. Default services are Qdrant, Neo4j Community, Redis, development Keycloak and deny-by-default OPA. The `app` profile adds implementation-dependent services. Monitoring is specified in the architecture and must be added to the implementation with reviewed collector/Prometheus/Grafana configurations; this file does not pretend to deploy it.
+`compose.yaml` defines the full local stack. Dependency services start by default; the `app` profile adds the application services.
 
-## Prerequisites and setup
+| Service | Role | Port (host) |
+|---|---|---|
+| gateway (Caddy) | TLS entry point; routes `/api`, `/auth` and the web app | 127.0.0.1:8443 |
+| web (Next.js) | Student, teacher and advisor portals | internal |
+| api (FastAPI) | Stateless HTTP API; validates tokens; enforces policy | internal |
+| source (FastAPI) | The only process that owns the SQLite database | internal |
+| worker (RQ) | Ingestion, chunking, embedding, indexing, purge | internal |
+| scheduler | Enqueues web-cache purges on an interval | internal |
+| redis | Job queue, rate limiting, lockout counters, query cache | internal |
+| keycloak | OIDC identity; imports `keycloak/education-realm.json` | internal |
+| opa | Policy decisions from `policies/education.rego` | internal |
+| qdrant, neo4j | Derived vector and graph indexes | internal |
 
-1. Use a Docker Compose v2 Linux-container environment and an encrypted host disk. Budget memory for graph, vector, embeddings and identity, then measure usage; do not treat a developer laptop as a sizing reference.
-2. Copy `.env.example` to `.env`, then replace **all** image placeholders with valid, reviewed image digests and all credentials with local random secrets. OPA must support Rego v1; use Redis 8 under the reviewed license option. Digest placeholders deliberately do not resolve to runnable images.
-3. Set an account-enabled Bedrock model/region. Application profiles need approved short-lived AWS credentials through a credential-process/workload mechanism configured in their images; `.env` deliberately contains no AWS keys. Browser bundles must never contain credentials.
-4. Implement/build source, API, worker and web images according to `implementation/STRUCTURE.md`. Source listens on 8001, API on 8000, Next.js on 3000; images must honor the configured URLs and startup commands. Source owns migrations and SQLite; other containers never mount that file. Gate startup on real readiness with retry/backoff; `service_started` alone is not readiness.
-5. Provision the Keycloak `education` realm, OIDC clients, audiences, PKCE redirects, workload identities and role/membership mappings. Publish tested OPA bundles. No protected application access works with the default deny policy.
-6. Resolve public issuer versus internal discovery: `https://localhost:8443` is a browser issuer, **not** a usable loopback URL from another container. Supply a reachable internal JWKS/discovery URL with the same verified issuer, or container DNS/host mappings for a development hostname reachable by browser and containers. Trust the local Caddy CA in both browser and server trust stores; never disable certificate verification. BFF session encryption keys/client secrets must be injected before application startup.
+Only the gateway publishes a host port. Services share the `knowledge` network, which has no outbound route; `egress` is attached only where a service needs it.
 
-From this directory, after the prerequisites:
+## Setup
+
+1. Create the environment file and replace every placeholder:
+
+   ```powershell
+   Copy-Item deployment/.env.example deployment/.env
+   ```
+
+   - Image values use `repository@sha256:<digest>`. Use reviewed digests. The stack was verified with Qdrant 1.20.0, Neo4j 5.26 Community, Redis 8, Keycloak 26.4, OPA latest-static, and Caddy 2.
+   - Secrets (`SOURCE_SERVICE_TOKEN`, `QDRANT_API_KEY`, `NEO4J_PASSWORD`, `REDIS_PASSWORD`, `KEYCLOAK_ADMIN_PASSWORD`) must be random. `.env` is gitignored.
+   - `BEDROCK_MODEL_ID` and `BEDROCK_EMBED_MODEL_ID` are optional. Without them the answers are evidence-only and embeddings are the labeled hashed vectors.
+
+2. Validate the configuration without printing secrets:
+
+   ```powershell
+   docker compose --env-file deployment/.env -f deployment/compose.yaml --profile app config --quiet
+   ```
+
+3. Start the stack:
+
+   ```powershell
+   docker compose --env-file deployment/.env -f deployment/compose.yaml --profile app up -d --build
+   ```
+
+   Then open https://localhost:8443. The gateway's certificate is issued by Caddy's local authority; trust it in the browser or accept the warning for local use.
+
+Stop with `docker compose -f deployment/compose.yaml --profile app down`. Add `-v` only if you intend to delete the data volumes.
+
+## Keycloak only
+
+To run the realm without the rest of the stack (for the local launcher or tests):
 
 ```powershell
-Copy-Item .env.example .env
-# Edit .env with valid digests/secrets before continuing.
-docker compose --env-file .env config --quiet
-docker compose --env-file .env up -d
-# After building images, configuring identity, and publishing policy:
-docker compose --env-file .env --profile app up -d
+docker run -d --name kag-keycloak -p 8080:8080 `
+  -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=<local-secret> `
+  -e KC_HTTP_RELATIVE_PATH=/auth -e KC_HOSTNAME=https://localhost:8443/auth -e KC_PROXY_HEADERS=xforwarded `
+  -v "${PWD}/deployment/keycloak:/opt/keycloak/data/import:ro" `
+  quay.io/keycloak/keycloak:26.4 start-dev --import-realm
 ```
 
-`Copy-Item` is a one-time setup step; preserve any existing `.env`. Do not print `docker compose config` without `--quiet`, because resolved configuration contains local secrets. No containers were started as part of producing this package.
+Tokens carry the public issuer `https://localhost:8443/auth/realms/education`, which the API validates even when it fetches keys from the internal address.
 
-## Development boundaries
+## How authentication works
 
-- Only the TLS gateway publishes a loopback port. Indexes, queue, policy and SQLite source are private Docker services. Internal HTTP/Bolt/Redis links are **synthetic-data development only**. Add authenticated TLS/mTLS service gateways and client certificates before real records; AWS service discovery is not encryption.
-- Keycloak `start-dev` and its development database are not production configuration. Use production startup, external PostgreSQL, appropriate hostname/proxy settings and backup procedures on AWS.
-- This blueprint shows environment variables for readability. Docker access can reveal them. Production uses secret mounts/Secrets Manager with application-supported file loading and rotates credentials.
-- Named volumes survive container replacement; they are not backups and do not imply at-rest encryption. Use SQLite online backup; offline Neo4j dumps/rebuild and supported Qdrant snapshots; separately back up identity state and documents.
-- Gateway is in the `app` profile, so a dependency-only startup has no host web interface. Use in-network admin tooling for dependency smoke tests; do not expose unauthenticated ports for convenience.
-- API's public health endpoint is liveness. Implement internal readiness, broker probes, worker heartbeat, ingestion lag and scheduled backup checks. Healthcheck commands require Python/cypher-shell in their respective images; validate exact commands against pinned images.
-- OPA controls logical access; network segmentation and authentication for the source/index services remain required. Application clients must construct scoped queries and refuse empty/invalid policy decisions.
-- Scale source-service to **one process owning the SQLite file**. Scale API/workers only within measured capacity. Never share that file over EFS/NFS or between distributed tasks.
-- Add `.env`, downloaded data, certificates and secrets to your implementation's ignore rules. Stop services with `docker compose down`; avoid volume deletion when retaining data.
+- `/api/v1/auth/login` exchanges the demo credentials with Keycloak (password grant) and stores the access token in an HttpOnly cookie. The cookie's lifetime matches the token's expiry.
+- Every request validates the token: RS256 signature from the realm JWKS, issuer, audience `kag-api`, expiry, and required claims (`tenant_id`, `kag_user_id`, `role`).
+- The API then checks that the user exists in the source service with the same tenant and role. A token that is valid but disagrees with the source is refused.
+- Repeated failed logins for one account are locked for 15 minutes (counters in Redis).
+
+## How data moves
+
+1. Admin submits ingestion. The API validates the request, asks the source service to create an idempotent job, and enqueues it on Redis.
+2. The worker runs the pipeline: the source validates and content-addresses the document; the worker chunks, embeds and indexes it at the next generation; the source commits the generation and rows in one transaction.
+3. A failed step leaves no published rows. Index points for an unpublished generation are never returned, because reads intersect index hits with published rows.
+4. Query answers are cached in Redis for five minutes, keyed by tenant, published generation and question. A new publication changes the generation, so stale answers are not served.
 
 ## Validation status
 
-The Compose file was statically validated with Compose configuration parsing using non-secret dummy values. Application images, registry image digests, realm bootstrapping, internal TLS, runtime credentials, dependency readiness and actual end-to-end behavior still require implementation and testing. The typed Python examples were syntax-checked, not executed against Bedrock.
+Verified in this environment:
+
+- The full stack built and started. Health, login through Keycloak, learning paths, queries, teacher waivers (record, effect on the path, revoke), advisor briefs with cited sources, and asynchronous ingestion through the worker all worked through the gateway.
+- Vectors and graph nodes were written to Qdrant and Neo4j by the worker; retrieval read them back.
+- The test suite passed offline, against live Qdrant and Neo4j, against a real OPA (Rego and in-process decisions agree), and against a real Keycloak realm (tokens accepted, tampered tokens rejected).
+- The web app built and the teacher and advisor routes are served.
+
+Not verified here:
+
+- Amazon Bedrock generation and Titan embeddings were tested with mocks only. No AWS credentials were available.
+- The portals were not exercised in a browser; they were compiled and served.
+- The CI workflow has not run on GitHub.
+
+## Production boundaries
+
+These are deliberate limits of the pilot. Each one is listed in the architecture document as production work.
+
+- Keycloak runs in `start-dev` mode with a development database. Production needs external PostgreSQL, production startup and backups.
+- The password grant is for the demo login form only. Production uses Authorization Code with PKCE through the gateway, and short-lived sessions with revocation.
+- Internal traffic is plain HTTP on a private network. Production needs TLS or mTLS between services and workload identity instead of the shared `SOURCE_SERVICE_TOKEN`.
+- The source service must remain a single process owning one SQLite file on one host. Do not share that file over network storage or scale it horizontally.
+- Named volumes are not backups and are not encrypted. Use SQLite online backups, Neo4j and Qdrant snapshot procedures, and separate identity backups.
+- Secrets are environment variables in this compose file, which `docker inspect` can reveal. Production uses secret mounts or a secrets manager.
+- There is no monitoring stack, log shipping, or alerting in this file. The health endpoints are liveness-level.

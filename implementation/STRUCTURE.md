@@ -1,53 +1,58 @@
-# Proposed implementation structure
+# Implementation structure
 
-The files below are a target structure, not existing application modules. `contracts.py` alongside this document is a standalone example. It requires Pydantic 2 and is not imported by the application; the generation adapter lives in `backend/app/kag.py`.
+This describes the modules that exist in the repository and the boundaries between them.
 
 ```text
-apps/web/                        Next.js, TypeScript, Tailwind, shadcn/ui
-  app/{student,teacher,advisor,admin}/
-  components/{chat,evidence,learning-path,progress,graph}/
-  lib/{session,api-client,stream-parser}/
-services/api/
-  app/main.py                   FastAPI app, lifespan, readiness, middleware
-  app/api/v1/{kag,curriculum,students,knowledge,ingestion,feedback,evidence}.py
-  app/api/{dependencies,errors,streaming}.py
-  app/core/{config,authentication,authorization,telemetry,limits}.py
-  app/contracts/{queries,responses,evidence,scope,manifest}.py
-  app/workflows/{query_graph,state,nodes}.py
-  app/domain/{facts,requirements,learning_path,mastery,grounding}.py
-  app/ports/{source,vector,graph,policy,generator,evidence,manifest}.py
-  app/adapters/{source_http,qdrant,neo4j,opa,bedrock,embeddings}.py
-  app/repositories/cypher/       Fixed parameterized traversal templates
-services/source/
-  app/main.py                   Internal authenticated FastAPI source API
-  app/auth/                     Workload identity + validated delegated scope
-  app/db/{models,session,repositories,migrations}/
-  app/api/{records,grants,snapshots,outbox,manifests,jobs,tombstones}.py
-  app/domain/{leases,publication,versioning}.py
-  app/maintenance/{backup,integrity}.py
-services/worker/
-  app/celery_app.py
-  app/tasks/{dispatch,extract,normalize,resolve,graph,embed,vector,validate,publish,delete}.py
-  app/pipeline/{idempotency,retries,reconciliation,quarantine}.py
-  app/parsers/{pdf,unstructured,ocr}.py
-  app/schedules.py              One scheduler instance only
-packages/domain/                Shared types and deterministic rules
-policies/                       Versioned OPA bundles + tests
-fixtures/                       Synthetic students; imported licensed curriculum
-tests/{unit,integration,security,e2e,evaluation,recovery}/
-infra/modules/                  OpenTofu modules (proposed)
-infra/environments/{dev,staging,prod}/
+frontend/                          Next.js app: student workspace, /teacher and /advisor portals
+  app/page.tsx                     student workspace (login, path, assistant, curriculum, graph, admin)
+  app/teacher/page.tsx             roster, prerequisite path, waivers
+  app/advisor/page.tsx             caseload, skill gaps, cited advising briefs
+  components/portal/shell.tsx      shared portal shell, role guard, status components
+  lib/api.ts                       typed API client
+
+backend/app/
+  main.py                          API routes, origin checks, rate limits, login lockout, query cache
+  auth.py                          Keycloak token validation (JWKS) and password grant
+  security.py                      current user (token + source cross-check), student-record access
+  policy.py                        purpose-based decisions; OPA when configured, else the same rule
+  contracts.py                     request, response and AI-output schemas
+  reasoning.py                     prerequisite rules: ALL/ANY groups, effective dates, waivers, thresholds
+  retrieval.py                     BM25 + chunk-vector fusion; lexical match always required
+  kag.py                           LangGraph workflow: retrieve, reason, generate, validate
+  indexes.py                       Qdrant and Neo4j adapters (SQLite fallbacks offline)
+  embeddings.py                    Bedrock Titan v2 embedder; hashed offline embedder
+  runtime.py                       Redis: RQ queue, rate limits, failure counters, query cache
+  source_client.py                 HTTP client for the source service
+  web_search.py                    optional online fallback (Wikipedia, SearXNG)
+  domain/documents.py              validation, content identity, entity linking, chunking (pure)
+  source/                          the source service (owns SQLite)
+    db.py                          schema and connection; only this process opens the file
+    repository.py                  all SQL; every query is tenant-scoped
+    seed.py                        synthetic demo tenants, curriculum and rules
+    main.py                        internal API; requires the service token except liveness
+  worker/
+    pipeline.py                    prepare -> chunk -> embed -> index -> commit; purge; rebuild
+    tasks.py                       queued jobs (ingestion, web publication, purge)
+    __main__.py                    `run` (RQ consumer) and `scheduler` (purge interval)
+
+backend/Dockerfile                 API image
+backend/Dockerfile.source          source service image
+backend/Dockerfile.worker          worker and scheduler image
+
+deployment/compose.yaml            full stack; see deployment/README.md
+deployment/keycloak/               education realm (users, clients, audience and claim mappers)
+deployment/policies/education.rego policy: grant, tenant and purpose
+deployment/Caddyfile               TLS gateway routes
 ```
 
-## Service boundaries
+## Boundaries
 
-- The source process alone mounts and opens `education.db`. SQLAlchemy is internal to that service. API/workers call authenticated source endpoints over the network; they do not mount SQLite.
-- The source service commits educational writes and outbox records atomically. It leases jobs and publishes manifests via compare-and-swap. Ingestion writes to graph/vector storage, then requests publication through the source API.
-- `AuthorizedScope` is constructed from verified identity and policy. A deserialized object is not itself proof of authorization. Internal calls must verify issuer/audience/signature, caller workload, delegation and current policy before creating scope.
-- A source snapshot adapter returns curriculum versions matching the manifest. Current grants, tombstones and student evidence are checked separately and their timestamps recorded.
-- Public graph endpoints accept approved entity filters, never arbitrary Cypher. LLM output never becomes SQL, Cypher or Python code.
-- The generation adapter receives minimized, validated evidence; the orchestration layer performs citation/claim validation and permission rechecks before returning it.
+- **Only the source service opens `education.db`.** The API and worker call it over HTTP with the service token. The source service also owns the atomic parts of publication and job state.
+- **Identity comes from Keycloak; authorization comes from the source and the policy.** A token proves who the caller is. The source confirms the user's tenant and role, and the policy decides whether that role may act on a specific student for a specific purpose.
+- **Indexes are derived.** Qdrant and Neo4j are rebuilt from published rows by the worker at startup. Reads intersect index hits with published rows.
+- **Model output is never a query or a fact.** It is validated against `AIDraft` and cited evidence IDs before it reaches the user. The answer text is drawn from the evidence.
+- **Publication is two-phase.** The worker writes index points at the next generation; the source commits the generation compare-and-swap and the rows in one transaction. A stale or conflicting publication is rejected and retried with a fresh generation.
 
-## Essential tests to implement
+## Tests
 
-Authorization must test another tenant's IDs, stale grants, unauthorized path intermediates, cache collisions and citation dereferences. Rule fixtures must cover missing evidence, effective dates, cycles, AND/OR groups and waivers. Ingestion tests must prove duplicate convergence, stale-event rejection, all-or-nothing publication and deletion propagation. Integration tests need actual Qdrant/Neo4j containers; mocks alone cannot establish query filtering or index consistency.
+`backend/tests` runs offline by default. The same suite runs against live Qdrant, Neo4j, OPA and Keycloak when their environment variables are set (see the README). Index, policy and realm behaviour are tested against real services, not mocks alone.
