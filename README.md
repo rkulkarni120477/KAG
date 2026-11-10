@@ -70,6 +70,14 @@ powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1 -SkipInstall
 
 For a Bedrock API key, set `AWS_BEARER_TOKEN_BEDROCK` in `backend/.env`; the installed Boto3 version supports it. Alternatively configure short-lived credentials through the SDK credential chain or a workload role. No keys belong in frontend code. Env files are Git-ignored and excluded from the Docker build context; credentials are injected at runtime. Compose intentionally does not mount your home credential directory. Model inference can incur charges. AI explanations are separately labeled; shape/citation-ID checks are **not a full semantic grounding guarantee**. Deterministic source evidence and rule outcomes remain separate.
 
+Configured model (10 November 2026): `us.anthropic.claude-fable-5-2`, with the US geographic inference profile and `AWS_REGION=us-east-1`. This can route inference across US AWS regions; it is not a single-region deployment guarantee. [AWS model details](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5-2.html). Fable uses low reasoning effort for this application; `BEDROCK_MAX_OUTPUT_TOKENS` defaults to 2048 and is capped at 4096. Keep model changes explicit rather than silently following a changing latest alias.
+
+After changing `backend/.env`:
+
+```powershell
+docker compose up -d --build api
+```
+
 ## Validation
 
 ```powershell

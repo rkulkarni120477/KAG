@@ -124,7 +124,7 @@ def overview(user=Depends(current_user)):
         skills = connection.execute("SELECT COUNT(*) FROM skills WHERE tenant_id=?",(tenant,)).fetchone()[0]
         queries = connection.execute("SELECT COUNT(*) FROM audit_events WHERE tenant_id=? AND action='query' AND user_id=?",(tenant,user["id"])).fetchone()[0]
         generation = connection.execute("SELECT generation,updated_at FROM index_manifests WHERE tenant_id=?",(tenant,)).fetchone()
-    return {"user":user,"students":students,"stats":{"resources":resources,"standards":standards,"skills":skills,"queries":queries},"manifest":dict(generation) if generation else None,"bedrock_configured":bool(os.getenv("BEDROCK_MODEL_ID")),"retrieval":"Local BM25 + hashed vectors","graph":"SQLite + NetworkX","demo":True}
+    return {"user":user,"students":students,"stats":{"resources":resources,"standards":standards,"skills":skills,"queries":queries},"manifest":dict(generation) if generation else None,"bedrock_configured":bool(os.getenv("BEDROCK_MODEL_ID")),"bedrock_model_id":os.getenv("BEDROCK_MODEL_ID") or None,"bedrock_region":os.getenv("AWS_REGION","us-east-1"),"retrieval":"Local BM25 + hashed vectors","graph":"SQLite + NetworkX","demo":True}
 
 
 @app.get("/api/v1/curriculum/standards")

@@ -7,3 +7,4 @@ langgraph==1.2.20
 boto3==1.43.127
 httpx==0.28.1
 pytest==9.2.0
+python-dotenv==1.2.4
