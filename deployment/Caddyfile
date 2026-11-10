@@ -1,0 +1,18 @@
+https://localhost:8443 {
+    tls internal
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy same-origin
+    }
+    handle /api/* {
+        reverse_proxy api:8000 {
+            flush_interval -1
+        }
+    }
+    handle /auth/* {
+        reverse_proxy keycloak:8080
+    }
+    handle {
+        reverse_proxy web:3000
+    }
+}

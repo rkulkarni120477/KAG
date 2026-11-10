@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 1920 1080">
+<title>Educational KAG | AWS pilot deployment</title>
+<desc>Stateless services span two zones; the SQLite source and Community graph remain single-instance failure domains.</desc>
+<rect width="1920" height="1080" fill="white"/>
+<text x="50" y="35" font-family="Arial, sans-serif" font-size="33" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">Educational KAG | AWS pilot deployment</text>
+<text x="50" y="78" font-family="Arial, sans-serif" font-size="19" fill="#587085" text-anchor="start" dominant-baseline="text-before-edge">Stateless services span two zones; the SQLite source and Community graph remain single-instance failure domains.</text>
+<rect x="60" y="135" width="270" height="95" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="195.0" y="149" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Users</text>
+<text x="195.0" y="181" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Student • faculty • advisor</text>
+<text x="195.0" y="206" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Browser / HTTPS</text>
+<rect x="420" y="135" width="390" height="95" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="615.0" y="149" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Public edge</text>
+<text x="615.0" y="181" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Route53 • ACM • ALB</text>
+<text x="615.0" y="206" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Optional WAF • TLS routing</text>
+<polyline points="330,182 420,182" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="420,182 410.9955289764732,186.3496553411123 410.9955289764732,177.6503446588877" fill="#326998"/>
+<rect x="343.75" y="149" width="62.5" height="23" rx="2" fill="white" stroke="white"/>
+<text x="375" y="151" font-family="Arial, sans-serif" font-size="16" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">HTTPS</text>
+<rect x="60" y="290" width="1350" height="650" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="78" y="302" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">VPC  |  PRIVATE APPLICATION AND DATA SUBNETS</text>
+<rect x="90" y="350" width="620" height="255" rx="9" fill="#eaf3fc" stroke="#c6d5e2"/>
+<text x="108" y="362" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">ECS FARGATE  |  AVAILABILITY ZONES A + B</text>
+<rect x="115" y="400" width="270" height="85" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="250.0" y="414" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Next.js</text>
+<text x="250.0" y="446" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Role-based portals</text>
+<rect x="415" y="400" width="270" height="85" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="550.0" y="414" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">FastAPI / LangGraph</text>
+<text x="550.0" y="446" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">OPA • scoped retrieval</text>
+<polyline points="385,440 415,440" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="415,440 405.9955289764732,444.3496553411123 405.9955289764732,435.6503446588877" fill="#326998"/>
+<rect x="305.0" y="487" width="190.0" height="22" rx="2" fill="white" stroke="white"/>
+<text x="400" y="489" font-family="Arial, sans-serif" font-size="15" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">HTTPS / delegated identity</text>
+<rect x="115" y="525" width="570" height="60" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="400.0" y="539" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Celery workers + one scheduler</text>
+<polyline points="615,230 615,263 250,263 250,400" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="250,400 245.6503446588877,390.9955289764732 254.3496553411123,390.9955289764732" fill="#326998"/>
+<rect x="334.0" y="246" width="172.0" height="23" rx="2" fill="white" stroke="white"/>
+<text x="420" y="248" font-family="Arial, sans-serif" font-size="16" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">HTTPS target services</text>
+<rect x="760" y="350" width="620" height="385" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="778" y="362" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">PRIVATE EC2  |  RETAINED ENCRYPTED EBS</text>
+<rect x="790" y="405" width="560" height="85" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1070.0" y="419" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Single source host</text>
+<text x="1070.0" y="451" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">FastAPI source-service + local SQLite</text>
+<text x="1070.0" y="476" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">No shared database filesystem</text>
+<rect x="790" y="535" width="260" height="82" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="920.0" y="549" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Neo4j Community</text>
+<text x="920.0" y="581" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Derived graph</text>
+<rect x="1090" y="535" width="260" height="82" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1220.0" y="549" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Qdrant</text>
+<text x="1220.0" y="581" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Derived vector index</text>
+<rect x="790" y="645" width="560" height="65" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1070.0" y="659" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Redis broker • durable outbox replay</text>
+<polyline points="685,440 790,440" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="790,440 780.9955289764732,444.3496553411123 780.9955289764732,435.6503446588877" fill="#326998"/>
+<rect x="693.0" y="403" width="90.0" height="22" rx="2" fill="white" stroke="white"/>
+<text x="738" y="405" font-family="Arial, sans-serif" font-size="15" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">TLS / scope</text>
+<polyline points="685,470 740,470 740,575 790,575" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="790,575 780.9955289764732,579.3496553411123 780.9955289764732,570.6503446588877" fill="#326998"/>
+<rect x="701.25" y="498" width="77.5" height="21" rx="2" fill="white" stroke="white"/>
+<text x="740" y="500" font-family="Arial, sans-serif" font-size="14" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Index read</text>
+<polyline points="740,510 740,520 1220,520 1220,535" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="1220,535 1215.6503446588877,525.9955289764732 1224.3496553411123,525.9955289764732" fill="#326998"/>
+<rect x="1003.25" y="500" width="133.5" height="21" rx="2" fill="white" stroke="white"/>
+<text x="1070" y="502" font-family="Arial, sans-serif" font-size="14" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Scoped vector read</text>
+<polyline points="685,585 720,585 720,630 1220,630 1220,617" fill="none" stroke="#287d87" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="1220,617 1224.3496553411123,626.0044710235268 1215.6503446588877,626.0044710235268" fill="#287d87"/>
+<polyline points="930,630 930,617" fill="none" stroke="#287d87" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="930,617 934.3496553411123,626.0044710235268 925.6503446588877,626.0044710235268" fill="#287d87"/>
+<rect x="1016.75" y="621" width="126.5" height="21" rx="2" fill="white" stroke="white"/>
+<text x="1080" y="623" font-family="Arial, sans-serif" font-size="14" fill="#287d87" text-anchor="middle" dominant-baseline="text-before-edge">Background writes</text>
+<rect x="90" y="795" width="620" height="115" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="108" y="807" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">IDENTITY AND INTERNAL AUTHORIZATION</text>
+<text x="110" y="841" font-family="Arial, sans-serif" font-size="21" fill="#253e54" text-anchor="start" dominant-baseline="text-before-edge">Keycloak + separate PostgreSQL identity DB</text>
+<text x="110" y="873" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="start" dominant-baseline="text-before-edge">Production identity state; OPA policy bundles</text>
+<rect x="760" y="795" width="620" height="115" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="778" y="807" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">NETWORK AND WORKLOAD CONTROLS</text>
+<text x="780" y="841" font-family="Arial, sans-serif" font-size="21" fill="#253e54" text-anchor="start" dominant-baseline="text-before-edge">Security groups • IAM roles • TLS / mTLS</text>
+<text x="780" y="873" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="start" dominant-baseline="text-before-edge">No public index, queue, policy or source ports</text>
+<rect x="1460" y="290" width="410" height="650" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="1478" y="302" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">MANAGED AWS SERVICES</text>
+<rect x="1480" y="350" width="370" height="115" rx="9" fill="#fff5e7" stroke="#a76613"/>
+<text x="1665.0" y="364" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Amazon Bedrock</text>
+<text x="1665.0" y="396" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Approved model / region</text>
+<text x="1665.0" y="421" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Workload IAM • minimized data</text>
+<rect x="1480" y="510" width="370" height="110" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1665.0" y="524" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">S3 + KMS</text>
+<text x="1665.0" y="556" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Versioned documents / backups</text>
+<text x="1665.0" y="581" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Encrypted and retention-controlled</text>
+<rect x="1480" y="665" width="370" height="110" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1665.0" y="679" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Secrets + operations</text>
+<text x="1665.0" y="711" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Secrets Manager • CloudWatch</text>
+<text x="1665.0" y="736" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">OpenTelemetry / Prometheus</text>
+<rect x="1480" y="820" width="370" height="90" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1665.0" y="834" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Private endpoints</text>
+<text x="1665.0" y="866" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Validate regional availability</text>
+<polyline points="550,400 550,320 1430,320 1430,405 1480,405" fill="none" stroke="#a76613" stroke-width="2"/>
+<polygon points="1480,405 1470.9955289764732,409.3496553411123 1470.9955289764732,400.6503446588877" fill="#a76613"/>
+<rect x="977.2578125" y="302" width="205.484375" height="23" rx="2" fill="white" stroke="white"/>
+<text x="1080" y="304" font-family="Arial, sans-serif" font-size="16" fill="#a76613" text-anchor="middle" dominant-baseline="text-before-edge">Bedrock Runtime API / IAM</text>
+<polyline points="1380,565 1480,565" fill="none" stroke="#287d87" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="1480,565 1470.9955289764732,569.3496553411123 1470.9955289764732,560.6503446588877" fill="#287d87"/>
+<rect x="1396.0" y="533" width="68.0" height="22" rx="2" fill="white" stroke="white"/>
+<text x="1430" y="535" font-family="Arial, sans-serif" font-size="15" fill="#287d87" text-anchor="middle" dominant-baseline="text-before-edge">Backups</text>
+<text x="50" y="1024" font-family="Arial, sans-serif" font-size="17" fill="#587085" text-anchor="start" dominant-baseline="text-before-edge">OpenTofu + CI/CD: separate environments, digest-pinned images, reviewed plans. Production scale: PostgreSQL + tested index HA.</text>
+<text x="1870" y="1051" font-family="Arial, sans-serif" font-size="15" fill="#587085" text-anchor="end" dominant-baseline="text-before-edge">EDUCATIONAL KAG  |  ARCHITECTURE BASELINE: 10 NOV 2026</text>
+</svg>

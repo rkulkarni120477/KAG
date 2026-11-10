@@ -1,0 +1,9 @@
+fastapi==0.162.2
+uvicorn[standard]==0.54.0
+pydantic==2.14.3
+sqlalchemy==2.1.8
+networkx==3.6.1
+langgraph==1.2.20
+boto3==1.43.127
+httpx==0.28.1
+pytest==9.2.0

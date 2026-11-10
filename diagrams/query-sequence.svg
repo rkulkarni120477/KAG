@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 1920 1080">
+<title>Educational KAG | Query execution sequence</title>
+<desc>A validated answer is streamed only after grounding checks; identity and evidence authorization are enforced before release.</desc>
+<rect width="1920" height="1080" fill="white"/>
+<text x="50" y="35" font-family="Arial, sans-serif" font-size="33" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">Educational KAG | Query execution sequence</text>
+<text x="50" y="78" font-family="Arial, sans-serif" font-size="19" fill="#587085" text-anchor="start" dominant-baseline="text-before-edge">A validated answer is streamed only after grounding checks; identity and evidence authorization are enforced before release.</text>
+<rect x="25" y="135" width="270" height="60" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="160.0" y="149" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Next.js</text>
+<polyline points="160,195 160,980" fill="none" stroke="#c6d5e2" stroke-width="1" stroke-dasharray="7 5"/>
+<rect x="335" y="135" width="270" height="60" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="470.0" y="149" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">FastAPI / LangGraph</text>
+<polyline points="470,195 470,980" fill="none" stroke="#c6d5e2" stroke-width="1" stroke-dasharray="7 5"/>
+<rect x="645" y="135" width="270" height="60" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="780.0" y="149" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Policy + source</text>
+<polyline points="780,195 780,980" fill="none" stroke="#c6d5e2" stroke-width="1" stroke-dasharray="7 5"/>
+<rect x="955" y="135" width="270" height="60" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="1090.0" y="149" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Qdrant / Neo4j</text>
+<polyline points="1090,195 1090,980" fill="none" stroke="#c6d5e2" stroke-width="1" stroke-dasharray="7 5"/>
+<rect x="1265" y="135" width="270" height="60" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="1400.0" y="149" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Python rules</text>
+<polyline points="1400,195 1400,980" fill="none" stroke="#c6d5e2" stroke-width="1" stroke-dasharray="7 5"/>
+<rect x="1575" y="135" width="270" height="60" rx="9" fill="#fff5e7" stroke="#c6d5e2"/>
+<text x="1710.0" y="149" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Amazon Bedrock</text>
+<polyline points="1710,195 1710,980" fill="none" stroke="#c6d5e2" stroke-width="1" stroke-dasharray="7 5"/>
+<polyline points="160,245 470,245" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="470,245 460.9955289764732,249.3496553411123 460.9955289764732,240.6503446588877" fill="#326998"/>
+<rect x="170.5" y="216" width="289.0" height="25" rx="2" fill="white" stroke="white"/>
+<text x="315.0" y="218" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">1  Question / authenticated HTTPS</text>
+<polyline points="470,310 780,310" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="780,310 770.9955289764732,314.3496553411123 770.9955289764732,305.6503446588877" fill="#326998"/>
+<rect x="477.2578125" y="281" width="295.484375" height="25" rx="2" fill="white" stroke="white"/>
+<text x="625.0" y="283" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">2  Verify identity + authorized scope</text>
+<polyline points="470,375 780,375" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="780,375 770.9955289764732,379.3496553411123 770.9955289764732,370.6503446588877" fill="#326998"/>
+<rect x="522.5" y="346" width="205.0" height="25" rx="2" fill="white" stroke="white"/>
+<text x="625.0" y="348" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">3  Classify / pin manifest</text>
+<polyline points="470,440 1090,440" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="1090,440 1080.9955289764732,444.3496553411123 1080.9955289764732,435.6503446588877" fill="#326998"/>
+<rect x="617.2578125" y="411" width="325.484375" height="25" rx="2" fill="white" stroke="white"/>
+<text x="780.0" y="413" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">4–5  Authorized vector + graph retrieval</text>
+<polyline points="470,505 1400,505" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="1400,505 1390.9955289764732,509.3496553411123 1390.9955289764732,500.6503446588877" fill="#326998"/>
+<rect x="772.75" y="476" width="324.5" height="25" rx="2" fill="white" stroke="white"/>
+<text x="935.0" y="478" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">6  Current mastery + deterministic rules</text>
+<polyline points="470,655 1710,655" fill="none" stroke="#a76613" stroke-width="2"/>
+<polygon points="1710,655 1700.9955289764732,659.3496553411123 1700.9955289764732,650.6503446588877" fill="#a76613"/>
+<rect x="946.0" y="626" width="288.0" height="25" rx="2" fill="white" stroke="white"/>
+<text x="1090.0" y="628" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">8  Minimized evidence / generation</text>
+<polyline points="1710,720 470,720" fill="none" stroke="#a76613" stroke-width="2"/>
+<polygon points="470,720 479.0044710235268,715.6503446588877 479.0044710235268,724.3496553411123" fill="#a76613"/>
+<rect x="927.00390625" y="691" width="325.9921875" height="25" rx="2" fill="white" stroke="white"/>
+<text x="1090.0" y="693" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Buffered draft (untrusted until validated)</text>
+<polyline points="470,850 780,850" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="780,850 770.9955289764732,854.3496553411123 770.9955289764732,845.6503446588877" fill="#326998"/>
+<rect x="473.0" y="821" width="304.0" height="25" rx="2" fill="white" stroke="white"/>
+<text x="625.0" y="823" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Recheck current grants / tombstones</text>
+<polyline points="470,915 160,915" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="160,915 169.00447102352678,910.6503446588877 169.00447102352678,919.3496553411123" fill="#326998"/>
+<rect x="162.26171875" y="886" width="305.4765625" height="25" rx="2" fill="white" stroke="white"/>
+<text x="315.0" y="888" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">10  Validated SSE answer + citations</text>
+<rect x="390" y="554" width="1180" height="55" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="980" y="570" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">7  Consolidate • deduplicate • verify provenance and source versions</text>
+<rect x="390" y="760" width="1180" height="55" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="980" y="776" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">9  Validate citation support • policy • unsupported claims; repair or fall back</text>
+<rect x="390" y="949" width="1180" height="45" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="980" y="961" font-family="Arial, sans-serif" font-size="19" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge">11  Redacted metrics / audit; optional user feedback through a separate request</text>
+<text x="50" y="1024" font-family="Arial, sans-serif" font-size="17" fill="#587085" text-anchor="start" dominant-baseline="text-before-edge">Solid arrows: calls / response transfer. Steps 4–5 may run in parallel. Retrieval results feed reasoning before generation.</text>
+<text x="1870" y="1051" font-family="Arial, sans-serif" font-size="15" fill="#587085" text-anchor="end" dominant-baseline="text-before-edge">EDUCATIONAL KAG  |  ARCHITECTURE BASELINE: 10 NOV 2026</text>
+</svg>

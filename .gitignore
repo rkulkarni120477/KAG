@@ -1,0 +1,17 @@
+.env
+deployment/.env
+__pycache__/
+*.pyc
+*.db
+*.db-wal
+*.db-shm
+*.pem
+*.key
+node_modules/
+.venv/
+.runtime/
+.next/
+.npm-cache/
+*.tsbuildinfo
+.pytest_cache/
+backend/data/

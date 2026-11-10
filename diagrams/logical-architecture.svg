@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 1920 1080">
+<title>Educational KAG | Logical architecture</title>
+<desc>Six layers • authoritative sources • validated reasoning • evidence-linked explanations</desc>
+<rect width="1920" height="1080" fill="white"/>
+<text x="50" y="35" font-family="Arial, sans-serif" font-size="33" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">Educational KAG | Logical architecture</text>
+<text x="50" y="78" font-family="Arial, sans-serif" font-size="19" fill="#587085" text-anchor="start" dominant-baseline="text-before-edge">Six layers • authoritative sources • validated reasoning • evidence-linked explanations</text>
+<rect x="50" y="125" width="1420" height="120" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="68" y="137" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">1  USER APPLICATIONS</text>
+<rect x="80" y="170" width="325" height="55" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="242.5" y="184" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Student portal</text>
+<rect x="425" y="170" width="325" height="55" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="587.5" y="184" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Faculty portal</text>
+<rect x="770" y="170" width="325" height="55" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="932.5" y="184" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Advisor portal</text>
+<rect x="1115" y="170" width="325" height="55" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1277.5" y="184" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Admin dashboard</text>
+<polyline points="760,245 760,280" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="760,280 755.6503446588877,270.9955289764732 764.3496553411123,270.9955289764732" fill="#326998"/>
+<rect x="920.25" y="249" width="279.5" height="23" rx="2" fill="white" stroke="white"/>
+<text x="1060" y="251" font-family="Arial, sans-serif" font-size="16" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Authenticated HTTPS / validated SSE</text>
+<rect x="50" y="280" width="1420" height="125" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="68" y="292" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">2  API AND ORCHESTRATION</text>
+<rect x="80" y="325" width="1360" height="60" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="760.0" y="339" font-family="Arial, sans-serif" font-size="22" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">FastAPI • Pydantic • SQLAlchemy adapters • LangGraph / LangChain</text>
+<polyline points="760,405 760,430 235,430" fill="none" stroke="#326998" stroke-width="2"/>
+<polyline points="760,430 1270,430" fill="none" stroke="#326998" stroke-width="2"/>
+<rect x="609.25" y="413" width="301.5" height="23" rx="2" fill="white" stroke="white"/>
+<text x="760" y="415" font-family="Arial, sans-serif" font-size="16" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Scoped retrieval / rules / generation calls</text>
+<polyline points="235,430 235,490" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="235,490 230.6503446588877,480.9955289764732 239.3496553411123,480.9955289764732" fill="#326998"/>
+<polyline points="580,430 580,490" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="580,490 575.6503446588877,480.9955289764732 584.3496553411123,480.9955289764732" fill="#326998"/>
+<polyline points="925,430 925,490" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="925,490 920.6503446588877,480.9955289764732 929.3496553411123,480.9955289764732" fill="#326998"/>
+<polyline points="1270,430 1270,490" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="1270,490 1265.6503446588877,480.9955289764732 1274.3496553411123,480.9955289764732" fill="#326998"/>
+<rect x="50" y="455" width="1420" height="165" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="68" y="467" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">3  KAG INTELLIGENCE</text>
+<polyline points="235,480 235,500" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="235,500 230.6503446588877,490.9955289764732 239.3496553411123,490.9955289764732" fill="#326998"/>
+<polyline points="580,480 580,500" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="580,500 575.6503446588877,490.9955289764732 584.3496553411123,490.9955289764732" fill="#326998"/>
+<polyline points="925,480 925,500" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="925,500 920.6503446588877,490.9955289764732 929.3496553411123,490.9955289764732" fill="#326998"/>
+<polyline points="1270,480 1270,500" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="1270,500 1265.6503446588877,490.9955289764732 1274.3496553411123,490.9955289764732" fill="#326998"/>
+<rect x="80" y="500" width="310" height="98" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="235.0" y="514" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Vector retrieval</text>
+<text x="235.0" y="546" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Qdrant • Sentence Transformers</text>
+<text x="235.0" y="571" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Dense + lexical sparse search</text>
+<rect x="425" y="500" width="310" height="98" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="580.0" y="514" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Knowledge graph</text>
+<text x="580.0" y="546" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Neo4j Community</text>
+<text x="580.0" y="571" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Standards • skills • prerequisites</text>
+<rect x="770" y="500" width="310" height="98" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="925.0" y="514" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Deterministic reasoning</text>
+<text x="925.0" y="546" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Python • NetworkX</text>
+<text x="925.0" y="571" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Approved rules + evidence</text>
+<rect x="1115" y="500" width="325" height="98" rx="9" fill="#fff5e7" stroke="#a76613"/>
+<text x="1277.5" y="514" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Amazon Bedrock</text>
+<text x="1277.5" y="546" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Managed AWS LLM</text>
+<text x="1277.5" y="571" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Explain validated evidence</text>
+<polyline points="925,620 925,685" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="925,685 920.6503446588877,675.9955289764732 929.3496553411123,675.9955289764732" fill="#326998"/>
+<rect x="1013.75" y="639" width="182.5" height="23" rx="2" fill="white" stroke="white"/>
+<text x="1105" y="641" font-family="Arial, sans-serif" font-size="16" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Current authorized facts</text>
+<rect x="50" y="660" width="1420" height="130" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="68" y="672" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">4  ENTERPRISE KNOWLEDGE SOURCES</text>
+<rect x="80" y="705" width="570" height="65" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="365.0" y="719" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Approved documents</text>
+<text x="365.0" y="751" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Curriculum • resources • policies</text>
+<rect x="770" y="705" width="670" height="65" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1105.0" y="719" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">SQLite source-service</text>
+<text x="1105.0" y="751" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Authoritative records • grants • outbox • manifest</text>
+<polyline points="925,660 925,705" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="925,705 920.6503446588877,695.9955289764732 929.3496553411123,695.9955289764732" fill="#326998"/>
+<rect x="50" y="845" width="1420" height="140" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="68" y="857" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">5  INGESTION AND SYNCHRONIZATION</text>
+<rect x="80" y="893" width="310" height="72" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="235.0" y="907" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Extract</text>
+<text x="235.0" y="939" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Validate / normalize</text>
+<polyline points="390,930 425,930" fill="none" stroke="#287d87" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="425,930 415.9955289764732,934.3496553411123 415.9955289764732,925.6503446588877" fill="#287d87"/>
+<rect x="425" y="893" width="310" height="72" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="580.0" y="907" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Resolve</text>
+<text x="580.0" y="939" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">IDs / approved edges</text>
+<polyline points="735,930 770,930" fill="none" stroke="#287d87" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="770,930 760.9955289764732,934.3496553411123 760.9955289764732,925.6503446588877" fill="#287d87"/>
+<rect x="770" y="893" width="310" height="72" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="925.0" y="907" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Build</text>
+<text x="925.0" y="939" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Graph + embeddings</text>
+<polyline points="1080,930 1115,930" fill="none" stroke="#287d87" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="1115,930 1105.9955289764732,934.3496553411123 1105.9955289764732,925.6503446588877" fill="#287d87"/>
+<rect x="1115" y="893" width="310" height="72" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1270.0" y="907" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Publish</text>
+<text x="1270.0" y="939" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Reconcile / manifest</text>
+<polyline points="365,790 365,820 235,820 235,893" fill="none" stroke="#287d87" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="235,893 230.6503446588877,883.9955289764732 239.3496553411123,883.9955289764732" fill="#287d87"/>
+<polyline points="1100,790 1100,820 235,820" fill="none" stroke="#287d87" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="541.75" y="799" width="436.5" height="23" rx="2" fill="white" stroke="white"/>
+<text x="760" y="801" font-family="Arial, sans-serif" font-size="16" fill="#287d87" text-anchor="middle" dominant-baseline="text-before-edge">Committed outbox + approved documents → Celery / Redis</text>
+<polyline points="925,965 925,1000 25,1000 25,640 235,640 235,598" fill="none" stroke="#287d87" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="235,598 239.3496553411123,607.0044710235268 230.6503446588877,607.0044710235268" fill="#287d87"/>
+<polyline points="235,640 580,640 580,598" fill="none" stroke="#287d87" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="580,598 584.3496553411123,607.0044710235268 575.6503446588877,607.0044710235268" fill="#287d87"/>
+<rect x="229.0" y="621" width="142.0" height="22" rx="2" fill="white" stroke="white"/>
+<text x="300" y="623" font-family="Arial, sans-serif" font-size="15" fill="#287d87" text-anchor="middle" dominant-baseline="text-before-edge">Staged index writes</text>
+<rect x="1510" y="125" width="360" height="860" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="1528" y="137" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">6  CROSS-CUTTING CONTROLS</text>
+<rect x="1530" y="180" width="320" height="140" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1690.0" y="194" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Identity + policy</text>
+<text x="1690.0" y="226" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Keycloak • OPA</text>
+<text x="1690.0" y="251" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Tenant / student / purpose</text>
+<rect x="1530" y="345" width="320" height="140" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1690.0" y="359" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Security + governance</text>
+<text x="1690.0" y="391" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">IAM • Secrets Manager</text>
+<text x="1690.0" y="416" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">TLS • encryption • deletion</text>
+<text x="1690.0" y="441" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">FERPA / COPPA review</text>
+<rect x="1530" y="535" width="320" height="140" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1690.0" y="549" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Observability</text>
+<text x="1690.0" y="581" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">OpenTelemetry • Prometheus</text>
+<text x="1690.0" y="606" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Grafana • CloudWatch</text>
+<text x="1690.0" y="631" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Redacted audit + cost</text>
+<rect x="1530" y="725" width="320" height="140" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1690.0" y="739" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Delivery + recovery</text>
+<text x="1690.0" y="771" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Docker Compose / ECS</text>
+<text x="1690.0" y="796" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">OpenTofu • signed CI/CD</text>
+<text x="1690.0" y="821" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Backups • restore drills</text>
+<text x="50" y="1024" font-family="Arial, sans-serif" font-size="17" fill="#587085" text-anchor="start" dominant-baseline="text-before-edge">Solid: synchronous calls    Dashed teal: background ingestion    Vector / graph indexes are derived; Bedrock is managed AWS.</text>
+<text x="1870" y="1051" font-family="Arial, sans-serif" font-size="15" fill="#587085" text-anchor="end" dominant-baseline="text-before-edge">EDUCATIONAL KAG  |  ARCHITECTURE BASELINE: 10 NOV 2026</text>
+</svg>

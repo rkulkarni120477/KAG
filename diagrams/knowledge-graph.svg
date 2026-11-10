@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 1920 1080">
+<title>Educational KAG | Knowledge graph model</title>
+<desc>Core relationship paths; all nodes and edges include tenant, generation, effective dates and provenance.</desc>
+<rect width="1920" height="1080" fill="white"/>
+<text x="50" y="35" font-family="Arial, sans-serif" font-size="33" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">Educational KAG | Knowledge graph model</text>
+<text x="50" y="78" font-family="Arial, sans-serif" font-size="19" fill="#587085" text-anchor="start" dominant-baseline="text-before-edge">Core relationship paths; all nodes and edges include tenant, generation, effective dates and provenance.</text>
+<rect x="60" y="180" width="300" height="90" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="210.0" y="194" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Institution</text>
+<text x="210.0" y="226" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Ownership / jurisdiction</text>
+<rect x="700" y="180" width="300" height="90" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="850.0" y="194" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Course</text>
+<text x="850.0" y="226" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Catalog + version</text>
+<rect x="1330" y="180" width="410" height="90" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1535.0" y="194" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Academic Standard</text>
+<text x="1535.0" y="226" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Imported authority identifier</text>
+<polyline points="360,225 700,225" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="700,225 690.9955289764732,229.3496553411123 690.9955289764732,220.6503446588877" fill="#326998"/>
+<rect x="390.5" y="194" width="279.0" height="24" rx="2" fill="white" stroke="white"/>
+<text x="530" y="196" font-family="Arial, sans-serif" font-size="17" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">INSTITUTION_OFFERS_COURSE</text>
+<polyline points="1000,225 1330,225" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="1330,225 1320.9955289764732,229.3496553411123 1320.9955289764732,220.6503446588877" fill="#326998"/>
+<rect x="1028.26171875" y="194" width="273.4765625" height="23" rx="2" fill="white" stroke="white"/>
+<text x="1165" y="196" font-family="Arial, sans-serif" font-size="16" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">COURSE_ALIGNS_TO_STANDARD</text>
+<rect x="60" y="440" width="300" height="90" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="210.0" y="454" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Student</text>
+<text x="210.0" y="486" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Optional pseudonymous node</text>
+<rect x="700" y="440" width="300" height="90" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="850.0" y="454" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Skill</text>
+<text x="850.0" y="486" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Approved canonical concept</text>
+<rect x="1330" y="440" width="410" height="90" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1535.0" y="454" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Lesson</text>
+<text x="1535.0" y="486" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Approved course material</text>
+<polyline points="360,485 700,485" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="700,485 690.9955289764732,489.3496553411123 690.9955289764732,480.6503446588877" fill="#326998"/>
+<rect x="381.76171875" y="453" width="296.4765625" height="22" rx="2" fill="white" stroke="white"/>
+<text x="530" y="455" font-family="Arial, sans-serif" font-size="15" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">STUDENT_DEMONSTRATED_MASTERY</text>
+<polyline points="1330,485 1000,485" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="1000,485 1009.0044710235268,480.6503446588877 1009.0044710235268,489.3496553411123" fill="#326998"/>
+<rect x="1051.75" y="498" width="226.5" height="24" rx="2" fill="white" stroke="white"/>
+<text x="1165" y="500" font-family="Arial, sans-serif" font-size="17" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">LESSON_TEACHES_SKILL</text>
+<polyline points="210,440 210,330 850,330 850,270" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="850,270 854.3496553411123,279.0044710235268 845.6503446588877,279.0044710235268" fill="#326998"/>
+<rect x="364.75" y="310" width="290.5" height="24" rx="2" fill="white" stroke="white"/>
+<text x="510" y="312" font-family="Arial, sans-serif" font-size="17" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">STUDENT_COMPLETED_COURSE</text>
+<polyline points="900,440 900,400 1070,400 1070,460 1000,460" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="1000,460 1009.0044710235268,455.6503446588877 1009.0044710235268,464.3496553411123" fill="#326998"/>
+<rect x="1011.0" y="372" width="198.0" height="23" rx="2" fill="white" stroke="white"/>
+<text x="1110" y="374" font-family="Arial, sans-serif" font-size="16" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">SKILL_REQUIRES_SKILL</text>
+<rect x="60" y="700" width="300" height="90" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="210.0" y="714" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Assessment</text>
+<text x="210.0" y="746" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Rubric / evidence date</text>
+<polyline points="360,745 430,745 430,620 755,620 755,530" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="755,530 759.3496553411123,539.0044710235268 750.6503446588877,539.0044710235268" fill="#326998"/>
+<rect x="395.5" y="598" width="269.0" height="23" rx="2" fill="white" stroke="white"/>
+<text x="530" y="600" font-family="Arial, sans-serif" font-size="16" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">ASSESSMENT_MEASURES_SKILL</text>
+<rect x="700" y="700" width="300" height="90" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="850.0" y="714" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Competency</text>
+<text x="850.0" y="746" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Learning targets</text>
+<rect x="1330" y="700" width="410" height="90" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1535.0" y="714" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Learning Resource</text>
+<text x="1535.0" y="746" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">Approved / licensed / accessible</text>
+<polyline points="1330,745 1000,745" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="1000,745 1009.0044710235268,740.6503446588877 1009.0044710235268,749.3496553411123" fill="#326998"/>
+<rect x="1014.50390625" y="712" width="300.9921875" height="22" rx="2" fill="white" stroke="white"/>
+<text x="1165" y="714" font-family="Arial, sans-serif" font-size="15" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">RESOURCE_SUPPORTS_COMPETENCY</text>
+<polyline points="900,530 900,700" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="900,700 895.6503446588877,690.9955289764732 904.3496553411123,690.9955289764732" fill="#326998"/>
+<rect x="942.00390625" y="657" width="155.9921875" height="23" rx="2" fill="white" stroke="white"/>
+<text x="1020" y="659" font-family="Arial, sans-serif" font-size="16" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">CONTRIBUTES_TO</text>
+<rect x="1330" y="315" width="410" height="80" rx="9" fill="white" stroke="#c6d5e2"/>
+<text x="1535.0" y="329" font-family="Arial, sans-serif" font-size="21" fill="#153453" text-anchor="middle" dominant-baseline="text-before-edge" font-weight="700">Prerequisite</text>
+<text x="1535.0" y="361" font-family="Arial, sans-serif" font-size="18" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">AND / OR • threshold • policy</text>
+<polyline points="950,270 950,298 1535,298 1535,315" fill="none" stroke="#326998" stroke-width="2"/>
+<polygon points="1535,315 1530.6503446588877,305.9955289764732 1539.3496553411123,305.9955289764732" fill="#326998"/>
+<rect x="1131.5" y="278" width="247.0" height="23" rx="2" fill="white" stroke="white"/>
+<text x="1255" y="280" font-family="Arial, sans-serif" font-size="16" fill="#587085" text-anchor="middle" dominant-baseline="text-before-edge">COURSE_HAS_PREREQUISITE</text>
+<rect x="60" y="855" width="1680" height="125" rx="9" fill="#f3f7fb" stroke="#c6d5e2"/>
+<text x="78" y="867" font-family="Arial, sans-serif" font-size="20" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">SUPPORTING ENTITIES AND MODEL RULES</text>
+<text x="85" y="901" font-family="Arial, sans-serif" font-size="23" fill="#153453" text-anchor="start" dominant-baseline="text-before-edge" font-weight="700">Teacher • State • Grade • Learning Outcome • Academic Policy</text>
+<text x="85" y="940" font-family="Arial, sans-serif" font-size="19" fill="#587085" text-anchor="start" dominant-baseline="text-before-edge">Prerequisite groups reference skills / courses. Full directed relations and constraints are specified in docs/architecture.md.</text>
+<text x="50" y="1024" font-family="Arial, sans-serif" font-size="17" fill="#587085" text-anchor="start" dominant-baseline="text-before-edge">Student mastery is source-verified at query time. Draft extracted relations are quarantined until steward approval.</text>
+<text x="1870" y="1051" font-family="Arial, sans-serif" font-size="15" fill="#587085" text-anchor="end" dominant-baseline="text-before-edge">EDUCATIONAL KAG  |  ARCHITECTURE BASELINE: 10 NOV 2026</text>
+</svg>

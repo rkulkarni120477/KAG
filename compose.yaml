@@ -1,0 +1,28 @@
+name: northstar-kag
+services:
+  api:
+    build: ./backend
+    env_file:
+      - path: ./.env
+        required: false
+      - path: ./backend/.env
+        required: false
+    environment:
+      KAG_DEMO_MODE: "true"
+      KAG_DATA_DIR: /data
+      KAG_ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+    volumes:
+      - education_data:/data
+    ports:
+      - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+  web:
+    build: ./frontend
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+volumes:
+  education_data: {}
