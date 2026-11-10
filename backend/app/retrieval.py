@@ -4,7 +4,11 @@ import hashlib
 import math
 import re
 
+from . import web_search
 from .db import db
+
+
+STOPWORDS = frozenset("a an and are as at be by can do does for from how i in is it me my of on or should study that the this to very what which who why will with you your".split())
 
 
 def tokens(text):
@@ -22,11 +26,33 @@ def embedding(text):
 
 
 def retrieve(tenant_id: str, question: str, limit: int = 5):
+    results = _search_local(tenant_id, question, limit)
+    if results or not web_search.enabled():
+        return results
+    # Online fallback: cache web results locally, then search the local store again.
+    # Send only content words to the search API; full question sentences match poorly.
+    keywords = " ".join(t for t in tokens(question) if t not in STOPWORDS)
+    fetched = web_search.search(keywords, limit)
+    if not fetched:
+        return []
+    with db() as connection:
+        for row in fetched:
+            connection.execute(
+                "INSERT OR REPLACE INTO resources VALUES (?,?,?,?,?,?,?,?,?,?)",
+                (row["id"], tenant_id, row["title"], row["text"], None, "Web result", row["source_uri"], row["retrieved_at"][:10], "curriculum", row["retrieved_at"]),
+            )
+        connection.execute("UPDATE index_manifests SET generation=generation+1, updated_at=? WHERE tenant_id=?", (fetched[0]["retrieved_at"], tenant_id))
+    return _search_local(tenant_id, question, limit)
+
+
+def _search_local(tenant_id: str, question: str, limit: int = 5):
     with db() as connection:
         docs = [dict(r) for r in connection.execute("SELECT * FROM resources WHERE tenant_id=? AND auth_scope='curriculum' ORDER BY id", (tenant_id,))]
     if not docs:
         return []
-    query = set(tokens(question))
+    # Stopwords must not count as evidence: "for" or "should" would otherwise match
+    # almost any document and suppress the online fallback.
+    query = {t for t in tokens(question) if t not in STOPWORDS}
     counts = [Counter(tokens(d["title"] + " " + d["text"])) for d in docs]
     avg_length = sum(sum(c.values()) for c in counts) / len(counts)
     lexical = []
