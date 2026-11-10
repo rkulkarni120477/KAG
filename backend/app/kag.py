@@ -37,12 +37,12 @@ def generate(state: State):
     tenant = state["user"]["tenant_id"]
     with db() as connection:
         manifest = connection.execute("SELECT generation FROM index_manifests WHERE tenant_id=?", (tenant,)).fetchone()
-    citations = [{"id":d["id"],"title":d["title"],"source_version":d["source_version"],"locator":"Full text","excerpt":d["text"][:600],"illustrative":d["source_uri"].startswith("demo://")} for d in evidence]
+    citations = [{"id":d["id"],"title":d["title"],"source_version":d["source_version"],"locator":"Full text","source_uri":d["source_uri"],"excerpt":d["text"][:600],"illustrative":d["source_uri"].startswith("demo://")} for d in evidence]
     relevant_ids = {d["skill_id"] for d in evidence if d["skill_id"]}
     # Only explicit path-intent phrases trigger the full learning path. Broad words
     # such as "topics" match any subject and must not route an unrelated question
     # (e.g. Geography) to the tenant's math sequence.
-    is_path = any(term in state["question"].lower() for term in ["algebra","before","sequence","learning path","prepare for","preparation"])
+    is_path = any(term in state["question"].lower() for term in ["algebra","sequence","learning path","prepare for","preparation"])
     steps = path["steps"] if is_path else [s for s in path["steps"] if s["id"] in relevant_ids]
     if not evidence:
         answer = "I couldn't find relevant evidence in this institution's knowledge collection. Try asking about Algebra I preparation, ratios, expressions, or equations, or ask an educator to add an appropriate source."

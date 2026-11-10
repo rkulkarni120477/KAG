@@ -50,6 +50,8 @@ CREATE TABLE IF NOT EXISTS feedback (id TEXT PRIMARY KEY, tenant_id TEXT NOT NUL
 CREATE TABLE IF NOT EXISTS audit_events (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, user_id TEXT NOT NULL, action TEXT NOT NULL, metadata TEXT NOT NULL, created_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS ingestion_jobs (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, user_id TEXT NOT NULL, idempotency_key TEXT NOT NULL, payload_hash TEXT NOT NULL, status TEXT NOT NULL, resource_id TEXT, error TEXT, created_at TEXT NOT NULL, UNIQUE(tenant_id,idempotency_key));
 CREATE TABLE IF NOT EXISTS index_manifests (tenant_id TEXT PRIMARY KEY, generation INTEGER NOT NULL, updated_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS topics (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, label TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(tenant_id,label));
+CREATE TABLE IF NOT EXISTS topic_resources (topic_id TEXT NOT NULL REFERENCES topics(id), resource_id TEXT NOT NULL REFERENCES resources(id), PRIMARY KEY(topic_id,resource_id));
 CREATE INDEX IF NOT EXISTS resources_tenant ON resources(tenant_id);
 CREATE INDEX IF NOT EXISTS audit_tenant ON audit_events(tenant_id,created_at);
 """

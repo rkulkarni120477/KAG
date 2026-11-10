@@ -15,3 +15,6 @@ node_modules/
 *.tsbuildinfo
 .pytest_cache/
 backend/data/
+
+# Local SearXNG config (contains secret_key)
+searxng/settings.yml

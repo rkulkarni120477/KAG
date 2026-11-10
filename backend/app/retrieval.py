@@ -1,6 +1,7 @@
 """Offline reproducible hybrid search. Hash vectors are explicitly not a trained model."""
 from collections import Counter
 import hashlib
+import hashlib
 import math
 import re
 
@@ -8,7 +9,12 @@ from . import web_search
 from .db import db
 
 
-STOPWORDS = frozenset("a an and are as at be by can do does for from how i in is it me my of on or should study that the this to very what which who why will with you your".split())
+# Question scaffolding ("which topics should I study before ...") carries no subject meaning.
+# Counting these words lets unrelated documents (e.g. Algebra text containing "before" or
+# "study") satisfy the lexical match and suppress the online fallback.
+STOPWORDS = frozenset("""a an and are as at be before by can could do does for from get help how i in is it know learn
+learning me my need of on or prepare ready should study studying that the this to topics topic very want what when which
+who why will with you your""".split())
 
 
 def tokens(text):
@@ -26,7 +32,9 @@ def embedding(text):
 
 
 def retrieve(tenant_id: str, question: str, limit: int = 5):
-    results = _search_local(tenant_id, question, limit)
+    # Curriculum first. Cached web pages are excluded here: they were fetched for other
+    # questions and can match incidental words (e.g. "history" in a Geography article).
+    results = _search_local(tenant_id, question, limit, exclude_web=True)
     if results or not web_search.enabled():
         return results
     # Online fallback: cache web results locally, then search the local store again.
@@ -41,13 +49,20 @@ def retrieve(tenant_id: str, question: str, limit: int = 5):
                 "INSERT OR REPLACE INTO resources VALUES (?,?,?,?,?,?,?,?,?,?)",
                 (row["id"], tenant_id, row["title"], row["text"], None, "Web result", row["source_uri"], row["retrieved_at"][:10], "curriculum", row["retrieved_at"]),
             )
+        label = keywords.strip().title()[:60]
+        topic_id = "topic-" + hashlib.sha256(f"{tenant_id}|{label.lower()}".encode()).hexdigest()[:16]
+        connection.execute("INSERT OR IGNORE INTO topics VALUES (?,?,?,?)", (topic_id, tenant_id, label, fetched[0]["retrieved_at"]))
+        connection.executemany("INSERT OR IGNORE INTO topic_resources VALUES (?,?)", [(topic_id, row["id"]) for row in fetched])
         connection.execute("UPDATE index_manifests SET generation=generation+1, updated_at=? WHERE tenant_id=?", (fetched[0]["retrieved_at"], tenant_id))
-    return _search_local(tenant_id, question, limit)
+    # Answer from the results fetched for this exact question (they are cached above).
+    return [{"id": r["id"], "title": r["title"], "text": r["text"], "skill_id": None, "kind": "Web result",
+             "source_uri": r["source_uri"], "source_version": r["retrieved_at"][:10], "auth_scope": "curriculum",
+             "created_at": r["retrieved_at"], "relevance": 0.0} for r in fetched]
 
 
-def _search_local(tenant_id: str, question: str, limit: int = 5):
+def _search_local(tenant_id: str, question: str, limit: int = 5, exclude_web: bool = False):
     with db() as connection:
-        docs = [dict(r) for r in connection.execute("SELECT * FROM resources WHERE tenant_id=? AND auth_scope='curriculum' ORDER BY id", (tenant_id,))]
+        docs = [dict(r) for r in connection.execute("SELECT * FROM resources WHERE tenant_id=? AND auth_scope='curriculum' AND (? = 0 OR kind != 'Web result') ORDER BY id", (tenant_id, int(exclude_web)))]
     if not docs:
         return []
     # Stopwords must not count as evidence: "for" or "should" would otherwise match

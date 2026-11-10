@@ -36,10 +36,18 @@ def knowledge_graph(user: dict) -> dict:
         prerequisites = [dict(r) for r in connection.execute("SELECT * FROM prerequisites WHERE tenant_id=?", (tenant,))]
         standards = [dict(r) for r in connection.execute("SELECT * FROM curriculum_standards WHERE tenant_id=?", (tenant,))]
         courses = [dict(r) for r in connection.execute("SELECT * FROM courses WHERE tenant_id=?", (tenant,))]
+        # Every curriculum resource available locally: seeded, imported, and cached web results.
+        resources = [dict(r) for r in connection.execute("SELECT id,title,text,skill_id,kind,source_uri FROM resources WHERE tenant_id=? AND auth_scope='curriculum' ORDER BY created_at, id", (tenant,))]
+        topics = [dict(r) for r in connection.execute("SELECT id,label,created_at FROM topics WHERE tenant_id=? ORDER BY created_at, id", (tenant,))]
+        topic_links = [dict(r) for r in connection.execute("SELECT tr.topic_id,tr.resource_id FROM topic_resources tr JOIN topics t ON t.id=tr.topic_id WHERE t.tenant_id=?", (tenant,))]
     nodes = [{"id":s["id"],"label":s["name"],"type":"skill","description":s["description"]} for s in skills]
     nodes += [{"id":c["id"],"label":c["name"],"type":"course","description":c["description"]} for c in courses]
     nodes += [{"id":s["id"],"label":s["id"],"type":"standard","description":s["description"]} for s in standards]
+    nodes += [{"id":t["id"],"label":t["label"],"type":"topic","description":f"Topic from local sources saved {t['created_at'][:10]}."} for t in topics]
+    nodes += [{"id":r["id"],"label":r["title"],"type":"resource","description":r["text"][:400],"kind":r["kind"],"source_uri":r["source_uri"]} for r in resources]
     edges = [{"source":p["skill_id"],"target":p["requires_id"],"type":"SKILL_REQUIRES_SKILL"} for p in prerequisites]
+    edges += [{"source":r["id"],"target":r["skill_id"],"type":"RESOURCE_SUPPORTS_SKILL"} for r in resources if r["skill_id"]]
+    edges += [{"source":l["resource_id"],"target":l["topic_id"],"type":"RESOURCE_COVERS_TOPIC"} for l in topic_links]
     if courses:
         edges += [{"source":courses[0]["id"],"target":s["id"],"type":"COURSE_HAS_PREREQUISITE"} for s in skills]
         edges += [{"source":courses[0]["id"],"target":s["id"],"type":"COURSE_ALIGNS_TO_STANDARD"} for s in standards]

@@ -1,7 +1,20 @@
 name: northstar-kag
 services:
+  searxng:
+    image: searxng/searxng:latest
+    restart: unless-stopped
+    environment:
+      SEARXNG_BASE_URL: http://127.0.0.1:8888/
+    volumes:
+      - ./searxng:/etc/searxng
+    ports:
+      - "127.0.0.1:8888:8080"
+
   api:
     build: ./backend
+    depends_on:
+      searxng:
+        condition: service_started
     env_file:
       - path: ./.env
         required: false
@@ -11,6 +24,7 @@ services:
       KAG_DEMO_MODE: "true"
       KAG_DATA_DIR: /data
       KAG_ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      SEARXNG_URL: http://searxng:8080
     volumes:
       - education_data:/data
     ports:
