@@ -359,7 +359,7 @@ Redis 8 is not accurately described as BSD-only. Choose its AGPLv3 option with a
 
 ## 11. Python / FastAPI implementation structure
 
-See [the full module structure](../implementation/STRUCTURE.md), [typed contracts](../implementation/contracts.py), and [Bedrock adapter](../implementation/bedrock_adapter.py). These are design assets and standalone examples, not a functioning application.
+See [the full module structure](../implementation/STRUCTURE.md) and [typed contracts](../implementation/contracts.py). The contracts are a design asset and standalone example; the Bedrock generation adapter now lives in `backend/app/kag.py`.
 
 Keep domain rules independent of LangChain, Bedrock and database clients. Define ports for `SourceRepository`, `VectorRetriever`, `GraphRepository`, `PolicyDecisionPoint`, `EvidenceResolver`, `Generator`, and `ManifestRepository`; integration adapters receive an `AuthorizedScope` and pinned `Manifest` rather than raw tenant strings. Dependencies construct authenticated scope once, repository templates enforce it, and evidence delivery rechecks current rights.
 

@@ -1,6 +1,6 @@
 # Proposed implementation structure
 
-The files below are a target structure, not existing application modules. `contracts.py` and `bedrock_adapter.py` alongside this document are standalone examples. They require Pydantic 2 and Boto3 in an implementation environment.
+The files below are a target structure, not existing application modules. `contracts.py` alongside this document is a standalone example. It requires Pydantic 2 and is not imported by the application; the generation adapter lives in `backend/app/kag.py`.
 
 ```text
 apps/web/                        Next.js, TypeScript, Tailwind, shadcn/ui

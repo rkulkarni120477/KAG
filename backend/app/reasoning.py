@@ -1,6 +1,7 @@
 import networkx as nx
 
 from .db import db
+from .indexes import graph_index
 from .security import student_access
 
 
@@ -32,6 +33,8 @@ def learning_path(user: dict, student_id: str | None = None) -> dict:
 def knowledge_graph(user: dict) -> dict:
     tenant = user["tenant_id"]
     with db() as connection:
+        manifest = connection.execute("SELECT generation FROM index_manifests WHERE tenant_id=?", (tenant,)).fetchone()
+        generation = manifest["generation"] if manifest else 0
         skills = [dict(r) for r in connection.execute("SELECT * FROM skills WHERE tenant_id=? ORDER BY position", (tenant,))]
         prerequisites = [dict(r) for r in connection.execute("SELECT * FROM prerequisites WHERE tenant_id=?", (tenant,))]
         standards = [dict(r) for r in connection.execute("SELECT * FROM curriculum_standards WHERE tenant_id=?", (tenant,))]
@@ -46,7 +49,12 @@ def knowledge_graph(user: dict) -> dict:
     nodes += [{"id":t["id"],"label":t["label"],"type":"topic","description":f"Topic from local sources saved {t['created_at'][:10]}."} for t in topics]
     nodes += [{"id":r["id"],"label":r["title"],"type":"resource","description":r["text"][:400],"kind":r["kind"],"source_uri":r["source_uri"]} for r in resources]
     edges = [{"source":p["skill_id"],"target":p["requires_id"],"type":"SKILL_REQUIRES_SKILL"} for p in prerequisites]
-    edges += [{"source":r["id"],"target":r["skill_id"],"type":"RESOURCE_SUPPORTS_SKILL"} for r in resources if r["skill_id"]]
+    # Resource-to-skill links come from the graph adapter (Neo4j or SQLite), restricted to
+    # published resources and known skills so unpublished index writes never surface.
+    resource_ids = {r["id"] for r in resources}
+    skill_ids = {s["id"] for s in skills}
+    support = sorted(p for p in graph_index().support_pairs(tenant, generation) if p[0] in resource_ids and p[1] in skill_ids)
+    edges += [{"source":r,"target":s,"type":"RESOURCE_SUPPORTS_SKILL"} for r, s in support]
     edges += [{"source":l["resource_id"],"target":l["topic_id"],"type":"RESOURCE_COVERS_TOPIC"} for l in topic_links]
     if courses:
         edges += [{"source":courses[0]["id"],"target":s["id"],"type":"COURSE_HAS_PREREQUISITE"} for s in skills]

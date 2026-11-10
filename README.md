@@ -105,7 +105,6 @@ Startup refuses `KAG_DEMO_MODE=false`. Production SSO, external indexes, TLS, go
 - [Query sequence — 4K PNG](diagrams/query-sequence.png) · [editable SVG](diagrams/query-sequence.svg)
 - [Knowledge graph model — 4K PNG](diagrams/knowledge-graph.png) · [editable SVG](diagrams/knowledge-graph.svg)
 - [Docker Compose blueprint](deployment/compose.yaml) · [setup and limitations](deployment/README.md)
-- [FastAPI implementation structure](implementation/STRUCTURE.md) · [typed contracts](implementation/contracts.py) · [Bedrock adapter example](implementation/bedrock_adapter.py)
-- [Diagram source and regeneration](tools/render_diagrams.py)
+- [FastAPI implementation structure](implementation/STRUCTURE.md) · [typed contracts](implementation/contracts.py)- [Diagram source and regeneration](tools/render_diagrams.py)
 
 The documents above describe the wider target architecture. Runtime entry points are [backend/app/main.py](backend/app/main.py), [backend/app/kag.py](backend/app/kag.py), [frontend/app/page.tsx](frontend/app/page.tsx), and the root [compose.yaml](compose.yaml). No AWS infrastructure has been provisioned.

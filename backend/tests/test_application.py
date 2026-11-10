@@ -52,6 +52,7 @@ async def scenario():
             assert "isolation-secret" not in str(answer)
             assert answer["generator"] == "Evidence-only local mode"
             assert (await client.post("/api/v1/feedback", json={"request_id":answer["request_id"],"rating":5})).status_code == 201
+            feedback_request_id = answer["request_id"]
             assert (await client.post("/api/v1/feedback", json={"request_id":"not-owned","rating":5})).status_code == 404
             assert (await client.post("/api/v1/kag/query", json={"question":"Algebra I","student_id":"jamie"})).status_code == 404
             stream = await client.post("/api/v1/kag/query", json={"question":"Explain equations","stream":True})
@@ -76,6 +77,7 @@ async def scenario():
             assert imported.status_code == 202, imported.text
             job = (await client.get("/api/v1/admin/ingestion/" + imported.json()["id"])).json()
             assert job["status"] == "completed", job
+            imported_job_id = job["id"]
             replay = await client.post("/api/v1/admin/ingestion",json=payload)
             assert replay.json()["id"] == job["id"]
             conflict = await client.post("/api/v1/admin/ingestion",json={**payload,"text":"Completely different content, long enough to pass validation."})
@@ -92,7 +94,8 @@ async def scenario():
             assert (await client.get("/api/v1/evidence/isolation-secret")).status_code == 200
 
         with db() as connection:
-            assert connection.execute("SELECT COUNT(*) FROM feedback").fetchone()[0] == 1
-            assert connection.execute("SELECT COUNT(*) FROM ingestion_jobs").fetchone()[0] == 1
+            # Counts are scoped to this test's records; other test modules share the database.
+            assert connection.execute("SELECT COUNT(*) FROM feedback WHERE request_id=?", (feedback_request_id,)).fetchone()[0] == 1
+            assert connection.execute("SELECT COUNT(*) FROM ingestion_jobs WHERE id=?", (imported_job_id,)).fetchone()[0] == 1
             # Raw prompts are deliberately absent from audit records.
             assert "Which topics" not in " ".join(r["metadata"] for r in connection.execute("SELECT metadata FROM audit_events"))

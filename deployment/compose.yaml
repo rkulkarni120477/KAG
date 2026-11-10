@@ -90,6 +90,8 @@ services:
     environment: &backend_env
       SOURCE_URL: http://source:8001
       SOURCE_SERVICE_AUDIENCE: kag-source
+      KAG_VECTOR_BACKEND: qdrant
+      KAG_GRAPH_BACKEND: neo4j
       QDRANT_URL: http://qdrant:6333
       QDRANT_API_KEY: ${QDRANT_API_KEY:?Set Qdrant API key}
       NEO4J_URI: bolt://neo4j:7687

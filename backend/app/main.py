@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from .db import db, initialize
+from .ingestion import publish, rebuild_indexes
 from .kag import workflow
 from .reasoning import knowledge_graph, learning_path
 from .security import admin, current_user, enforce_local_demo, new_session, student_access, verify_password
@@ -36,6 +37,8 @@ async def lifespan(_):
     enforce_local_demo()
     initialize()
     seed()
+    # Derived indexes (Qdrant/Neo4j) are rebuilt from published SQLite rows; a no-op offline.
+    rebuild_indexes()
     # Durable job ledger makes jobs interrupted by a process exit visible.
     with db() as connection:
         connection.execute("UPDATE ingestion_jobs SET status='failed', error='Process restarted before completion; submit a new job.' WHERE status='queued'")
@@ -240,12 +243,13 @@ def ingest_job(job_id: str,data: Ingest,user: dict):
             job = connection.execute("SELECT status FROM ingestion_jobs WHERE id=? AND tenant_id=?",(job_id,user["tenant_id"])).fetchone()
             if not job or job["status"] != "queued":
                 return
-            resource_id = str(uuid4())
-            connection.execute("INSERT INTO resources VALUES (?,?,?,?,?,?,?,?,?,?)",(resource_id,user["tenant_id"],data.title,data.text,data.skill_id,"Imported text",f"local://imports/{resource_id}","v1","curriculum",now()))
-            connection.execute("UPDATE index_manifests SET generation=generation+1, updated_at=? WHERE tenant_id=?",(now(),user["tenant_id"]))
-            connection.execute("UPDATE ingestion_jobs SET status='completed',resource_id=? WHERE id=?",(resource_id,job_id))
-        audit(user,"ingestion_completed",{"job_id":job_id})
+        # Index and publish atomically. Identical content converges to one resource.
+        published = publish(user["tenant_id"],[{"title":data.title,"text":data.text,"skill_id":data.skill_id}])
+        with db() as connection:
+            connection.execute("UPDATE ingestion_jobs SET status='completed',resource_id=? WHERE id=?",(published["resource_ids"][0],job_id))
+        audit(user,"ingestion_completed",{"job_id":job_id,"published_generation":published["generation"],"changed":published["changed"]})
     except Exception:
+        log.exception("Ingestion job failed; no partial generation was published")
         with db() as connection:
             connection.execute("UPDATE ingestion_jobs SET status='failed',error='Import failed validation or storage; retry with a new key.' WHERE id=?",(job_id,))
 

@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS ingestion_jobs (id TEXT PRIMARY KEY, tenant_id TEXT N
 CREATE TABLE IF NOT EXISTS index_manifests (tenant_id TEXT PRIMARY KEY, generation INTEGER NOT NULL, updated_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS topics (id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, label TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(tenant_id,label));
 CREATE TABLE IF NOT EXISTS topic_resources (topic_id TEXT NOT NULL REFERENCES topics(id), resource_id TEXT NOT NULL REFERENCES resources(id), PRIMARY KEY(topic_id,resource_id));
+CREATE TABLE IF NOT EXISTS resource_entities (tenant_id TEXT NOT NULL, resource_id TEXT NOT NULL REFERENCES resources(id), skill_id TEXT NOT NULL REFERENCES skills(id), PRIMARY KEY(resource_id,skill_id));
 CREATE INDEX IF NOT EXISTS resources_tenant ON resources(tenant_id);
 CREATE INDEX IF NOT EXISTS audit_tenant ON audit_events(tenant_id,created_at);
 """

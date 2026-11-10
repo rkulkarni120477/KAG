@@ -7,6 +7,7 @@ import time
 from fastapi import Depends, HTTPException, Request
 
 from .db import db
+from .policy import allow_student_access
 
 
 def hash_password(password: str, salt: str | None = None) -> str:
@@ -16,6 +17,8 @@ def hash_password(password: str, salt: str | None = None) -> str:
 
 
 def verify_password(password: str, stored: str) -> bool:
+    if "$" not in stored:
+        return False
     salt, _ = stored.split("$", 1)
     return hmac.compare_digest(hash_password(password, salt), stored)
 
@@ -45,10 +48,12 @@ def admin(user=Depends(current_user)):
 
 def student_access(user: dict, student_id: str):
     with db() as connection:
-        row = connection.execute("SELECT s.* FROM students s JOIN access_grants g ON g.student_id=s.id WHERE s.id=? AND s.tenant_id=? AND g.user_id=?", (student_id, user["tenant_id"], user["id"])).fetchone()
-    if not row:
+        student = connection.execute("SELECT * FROM students WHERE id=? AND tenant_id=?", (student_id, user["tenant_id"])).fetchone()
+        grant = connection.execute("SELECT 1 FROM access_grants WHERE user_id=? AND student_id=?", (user["id"], student_id)).fetchone() if student else None
+    # Same 404 for "missing", "other tenant" and "no grant" so IDs cannot be enumerated.
+    if not student or not allow_student_access(user, dict(student), grant is not None):
         raise HTTPException(404, "Student not found in your authorized scope")
-    return dict(row)
+    return dict(student)
 
 
 def enforce_local_demo():
